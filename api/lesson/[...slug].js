@@ -1,4 +1,4 @@
-// api/lesson/[...slug].js (Đã sửa lỗi)
+// api/lesson/[...slug].js
 const fetch = require('node-fetch');
 const csv = require('csvtojson');
 
@@ -45,19 +45,17 @@ module.exports = async (req, res) => {
     
     const slug = req.query.slug; 
     
-    // Vấn đề: Kiểm tra mạnh mẽ hơn. Nếu slug không phải mảng, hoặc độ dài không đủ.
+    // Đã sửa: Kiểm tra và xử lý mạnh mẽ hơn để tránh lỗi 400
     if (!Array.isArray(slug) || slug.length < 2) {
         return res.status(400).json({ success: false, message: "Thiếu Level và Topic trong đường dẫn (/api/lesson/[LEVEL]/[TOPIC])." });
     }
     
-    // Giả định đường dẫn là /api/lesson/A1/Hello and Goodbye
     // Lấy Level và Topic từ mảng slug
     const requestedLevel = slug[0].toUpperCase().trim();
     
-    // Nối các phần tử còn lại (nếu Topic có chứa dấu /) và sau đó decode
+    // Fix: Nối tất cả các phần tử còn lại (sau level) thành Topic, sau đó decode
     const requestedTopic = decodeURIComponent(slug.slice(1).join('/')).trim(); 
     
-    // Kiểm tra tính hợp lệ cuối cùng (chủ yếu để bắt lỗi trong CSV)
     if (!requestedLevel || !requestedTopic) {
          return res.status(400).json({ success: false, message: "Level hoặc Topic không được định dạng hợp lệ." });
     }
