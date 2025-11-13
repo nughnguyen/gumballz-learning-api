@@ -2,6 +2,10 @@
   "version": 2,
   "rewrites": [
     { 
+      "source": "/", 
+      "destination": "/api/data-viewer.js" 
+    },
+    { 
       "source": "/api/vocabulary/list-levels", 
       "destination": "/api/vocabulary/list-levels.js" 
     },
