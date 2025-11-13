@@ -389,7 +389,7 @@ module.exports = async (req, res) => {
             { label: 'TikTok', value: 'nq.hnug', link: 'https://www.tiktok.com/@nq.hnug', iconClass: 'fi fi-brands-tik-tok' },
             { label: 'Phone', value: '0388205003 / 0923056036', link: 'tel:0388205003', iconClass: 'fi fi-rr-phone-call' },
             { label: 'Zalo', value: 'Hưng (0923056036)', link: 'https://zalo.me/0923056036', iconClass: 'fi fi-rr-comment' },
-            { label: 'Website', value: 'guns.lol/nguyenquochung', link: 'https://guns.lol/nguyenquochung', iconClass: 'fi fi-rr-globe' }
+            { label: 'Website', value: 'guns.lol/nguyenquochung', link: 'https://guns.lol/ngunz-quoc-hung', iconClass: 'fi fi-rr-globe' }
         ];
 
         return `
@@ -425,9 +425,11 @@ module.exports = async (req, res) => {
                 </div>
                 <style>
                     /* ⭐ CSS CẬP NHẬT: THÊM GLOW CHO ICON VÀ CHỮ */
+                    /* Đảm bảo glow hoạt động trên các thẻ <i> */
                     .footer-icon-glow {
                         filter: drop-shadow(0 0 2px #c084fc); /* Màu tím nhạt cho icon */
                         transition: filter 0.3s ease;
+                        font-size: 1.25rem; /* Điều chỉnh kích thước icon nếu cần (w-5 h-5 tương đương 1.25rem) */
                     }
                     .footer-icon-glow:hover {
                         filter: drop-shadow(0 0 4px #e879f9) drop-shadow(0 0 8px #c084fc); /* Glow mạnh hơn khi hover */
@@ -528,10 +530,6 @@ module.exports = async (req, res) => {
                         left: 50%; top: 60%;
                     }
 
-                    /* ⭐ IMPORT CSS CỦA Flag Icons */
-                    @import url('https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css');
-                    @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
-                    /* Chú ý: Bạn cần thay thế các URL trên bằng URL CSS chính xác của thư viện icon "fi" nếu cần. */
                 </style>
             </footer>
         `;
@@ -556,9 +554,11 @@ module.exports = async (req, res) => {
                 }
                 .animate-spin { animation: spin 1s linear infinite; }
             </style>
-             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css">
-             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-             </head>
+             <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-brands/css/uicons-brands.css'>
+             <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+             <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-thin-rounded/css/uicons-thin-rounded.css'>
+
+        </head>
         <body>
             <div class="container mx-auto p-4 sm:p-8">
                 <header class="mb-8">

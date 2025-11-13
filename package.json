@@ -7,6 +7,7 @@
     "start": "vercel dev"
   },
   "dependencies": {
+    "@flaticon/flaticon-uicons": "^3.3.1",
     "csvtojson": "^2.0.14",
     "node-fetch": "^2.7.0"
   }
