@@ -9,8 +9,7 @@ let cachedData = null;
 let updateCount = 0;
 let lastUpdateTime = 'Chưa cập nhật';
 
-// ✅ ĐÃ THAY ĐỔI: Đặt thời gian khởi động cố định (12:00 trưa 13/11/2025 GMT+7)
-// Tương đương với 2025-11-13T05:00:00.000Z
+// Đặt thời gian khởi động cố định (12:00 trưa 13/11/2025 GMT+7)
 const serverStartTime = new Date('2025-11-13T05:00:00.000Z');
 
 const CACHE_DURATION = 3600 * 1000; // 1 giờ
@@ -50,9 +49,10 @@ const formatUptime = (start) => {
     return parts.join(' ');
 };
 
-// Hàm lấy và phân tích dữ liệu CSV (Đã tích hợp thống kê)
-async function getAndParseData() {
-    if (cachedData && new Date().getTime() - cachedData.cacheTime < CACHE_DURATION) {
+// Hàm lấy và phân tích dữ liệu CSV (Đã tích hợp thống kê và bỏ qua cache)
+async function getAndParseData(shouldBypassCache = false) { 
+    // Nếu không bypass cache và dữ liệu còn hạn, trả về cache
+    if (!shouldBypassCache && cachedData && new Date().getTime() - cachedData.cacheTime < CACHE_DURATION) {
         return cachedData.data;
     }
 
@@ -88,8 +88,14 @@ module.exports = async (req, res) => {
     // 1. Tải và Cập nhật Thống kê
     let rawData = [];
     let loadError = null;
+    
+    // Lấy tham số query "refresh" từ request
+    const url = new URL(`http://dummy.com${req.url}`); // Dùng dummy URL để parse req.url
+    const shouldRefresh = url.searchParams.get('refresh') === 'true';
+    
     try {
-        rawData = await getAndParseData();
+        // Truyền tham số shouldRefresh vào hàm tải dữ liệu
+        rawData = await getAndParseData(shouldRefresh);
     } catch (e) {
         loadError = e.message;
     }
@@ -279,10 +285,10 @@ module.exports = async (req, res) => {
                     tablinks = document.getElementsByClassName("tab-button");
                     for (i = 0; i < tablinks.length; i++) {
                         tablinks[i].classList.remove("bg-purple-600", "text-white");
-                        tablinks[i].classList.add("bg-white", "text-gray-700");
+                        tablinks[i].classList.add("bg-white", "text-gray-700", "border");
                     }
                     document.getElementById(levelName).style.display = "block";
-                    evt.currentTarget.classList.remove("bg-white", "text-gray-700");
+                    evt.currentTarget.classList.remove("bg-white", "text-gray-700", "border");
                     evt.currentTarget.classList.add("bg-purple-600", "text-white");
                 }
                 
@@ -310,16 +316,42 @@ module.exports = async (req, res) => {
                 body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; }
                 .text-purple-600 { color: #9333EA; }
                 .bg-purple-100 { background-color: #F3E8FF; }
+                /* Animation cho nút bấm */
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+                .animate-spin { animation: spin 1s linear infinite; }
             </style>
         </head>
         <body>
             <div class="container mx-auto p-4 sm:p-8">
                 <header class="mb-8">
-                    <h1 class="text-4xl font-extrabold text-purple-600 border-b-4 border-purple-200 pb-2">
-                        Gumballz API Dashboard
-                    </h1>
+                    <div class="flex justify-between items-center border-b-4 border-purple-200 pb-2">
+                        <h1 class="text-4xl font-extrabold text-purple-600">
+                            Gumballz API Dashboard
+                        </h1>
+                        <button id="refresh-button" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 flex items-center text-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m15.356 2H15m-3-4v5h.582m-.582 0l-1.356-1.356m1.356 1.356L15 8.644m-3 3l-1.356 1.356m1.356-1.356l1.356-1.356M4 13a8.001 8.001 0 0015.356 2"></path></svg>
+                            Cập nhật Ngay
+                        </button>
+                    </div>
                     <p class="text-gray-600 mt-2">Trạng thái đồng bộ dữ liệu từ Google Sheet CSV.</p>
                 </header>
+                
+                <script>
+                    document.getElementById('refresh-button').addEventListener('click', function() {
+                        const button = this;
+                        button.disabled = true;
+                        button.innerHTML = '<svg class="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m15.356 2H15m-3-4v5h.582m-.582 0l-1.356-1.356m1.356 1.356L15 8.644m-3 3l-1.356 1.356m1.356-1.356l1.356-1.356M4 13a8.001 8.001 0 0015.356 2"></path></svg> Đang tải...';
+                        
+                        // Lấy URL hiện tại và thêm/thay thế tham số refresh=true
+                        const currentUrl = new URL(window.location.href);
+                        currentUrl.searchParams.set('refresh', 'true');
+                        
+                        window.location.href = currentUrl.toString();
+                    });
+                </script>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-blue-500">
