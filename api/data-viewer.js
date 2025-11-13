@@ -101,10 +101,20 @@ module.exports = async (req, res) => {
     const levelMap = rawData.reduce((acc, row) => {
         const level = row.level.toUpperCase().trim();
         if (!acc[level]) {
-            acc[level] = { level: level, word_count: 0, topicSet: new Set() };
+            acc[level] = { level: level, word_count: 0, topicSet: new Set(), topics: {} }; // Thêm topics để lưu chi tiết
         }
         acc[level].word_count += 1;
         acc[level].topicSet.add(row.topic);
+        
+        // Thống kê từ vựng theo Topic trong Level đó
+        if (row.topic) {
+            const topicName = row.topic.trim();
+            if (!acc[level].topics[topicName]) {
+                acc[level].topics[topicName] = { topic: topicName, word_count: 0 };
+            }
+            acc[level].topics[topicName].word_count += 1;
+        }
+        
         return acc;
     }, {});
     
@@ -112,7 +122,8 @@ module.exports = async (req, res) => {
         .map(item => ({
             level: item.level,
             word_count: item.word_count,
-            topic_count: item.topicSet.size
+            topic_count: item.topicSet.size,
+            topic_details: Object.values(item.topics).sort((a, b) => a.topic.localeCompare(b.topic)) // Lưu chi tiết topics
         }))
         .sort((a, b) => a.level.localeCompare(b.level));
         
@@ -129,24 +140,21 @@ module.exports = async (req, res) => {
         testLevel = levelsArray[0].level;
         
         // Giả lập logic Topics (Sử dụng dữ liệu cached thay vì gọi API)
-        const filteredData = rawData.filter(row => row.level && row.level.toUpperCase().trim() === testLevel);
-        const topicMap = filteredData.reduce((acc, row) => {
-            if (!row.topic) return acc;
-            const topicName = row.topic.trim();
-            if (!acc[topicName]) {
-                acc[topicName] = { topic: topicName, word_count: 0 };
-            }
-            acc[topicName].word_count += 1;
-            return acc;
-        }, {});
-        topicsStatus = { success: true, message: "Thành công", data: Object.values(topicMap) };
+        const currentLevel = levelsArray.find(item => item.level === testLevel);
+        if (currentLevel) {
+             topicsStatus = { success: true, message: "Thành công", data: currentLevel.topic_details };
+        }
+
 
         if (topicsStatus.data.length > 0) {
-             testTopic = topicsStatus.data[0].topic;
-             
-             // Giả lập logic Lesson
-             const lessonData = filteredData.filter(row => row.topic && row.topic.trim() === testTopic);
-             lessonStatus = { success: true, message: "Thành công", data: lessonData.slice(0, 3) }; // Lấy 3 từ đầu
+              testTopic = topicsStatus.data[0].topic;
+              
+              // Giả lập logic Lesson
+              const filteredData = rawData.filter(row => 
+                  row.level && row.level.toUpperCase().trim() === testLevel &&
+                  row.topic && row.topic.trim() === testTopic
+              );
+              lessonStatus = { success: true, message: "Thành công", data: filteredData.slice(0, 3) }; // Lấy 3 từ đầu
         }
         
         // Tính Global Stats
@@ -169,6 +177,44 @@ module.exports = async (req, res) => {
         const stateColor = isSuccess ? 'text-green-700' : 'text-red-700';
 
         const displayData = data ? data.slice(0, 3) : []; // Giới hạn hiển thị 3 item đầu tiên
+        
+        // Logic hiển thị đặc biệt cho Endpoint 1
+        let sampleDataHtml = '';
+        let totalItemsDisplay = isSuccess ? data.length : 0;
+        let totalItemsLabel = 'Tổng số mục';
+
+        if (title.startsWith('1. Danh sách Levels')) {
+             sampleDataHtml = displayData.map(item => `
+                <div class="bg-gray-50 p-2 rounded-lg text-xs">
+                    <strong>Level:</strong> ${item.level}, 
+                    <strong>Topic Count:</strong> ${item.topic_count || 'N/A'},
+                    <strong>Word Count:</strong> ${item.word_count || 'N/A'}
+                </div>
+            `).join('');
+            totalItemsLabel = 'Tổng số Level';
+        } else if (title.startsWith('2. Danh sách Topics')) {
+             sampleDataHtml = displayData.map(item => `
+                <div class="bg-gray-50 p-2 rounded-lg text-xs">
+                    <strong>Topic:</strong> ${item.topic}, 
+                    <strong>Word Count:</strong> ${item.word_count || 'N/A'}
+                </div>
+            `).join('');
+             totalItemsLabel = 'Tổng số Chủ đề trong Level test';
+        } else if (title.startsWith('3. Nội dung Bài học')) {
+             sampleDataHtml = displayData.map(item => `
+                <div class="bg-gray-50 p-2 rounded-lg text-xs">
+                    <strong>Word:</strong> ${item.word}, 
+                    <strong>Level:</strong> ${item.level},
+                    <strong>Topic:</strong> ${item.topic}
+                </div>
+            `).join('');
+            totalItemsDisplay = rawData.filter(row => 
+                row.level && row.level.toUpperCase().trim() === testLevel &&
+                row.topic && row.topic.trim() === testTopic
+            ).length;
+            totalItemsLabel = 'Tổng số từ trong Bài học test';
+        }
+
 
         return `
             <div class="bg-white p-6 rounded-xl shadow-lg mb-6 transition duration-300 hover:shadow-xl">
@@ -181,19 +227,76 @@ module.exports = async (req, res) => {
                 ${isSuccess && displayData.length > 0 ? `
                     <div class="mt-4 space-y-2 text-sm text-gray-700">
                         <p class="font-semibold text-gray-600">Dữ liệu mẫu (${displayData.length} mục đầu tiên):</p>
-                        ${displayData.map(item => `
-                            <div class="bg-gray-50 p-2 rounded-lg text-xs">
-                                <strong>Level:</strong> ${item.level || item.word || item.topic}, 
-                                <strong>Word/Topic:</strong> ${item.word || item.topic || 'N/A'},
-                                <strong>Count:</strong> ${item.word_count || item.topic_count || 'N/A'}
-                            </div>
-                        `).join('')}
-                        <p class="text-xs text-gray-500 mt-2">Tổng số mục: ${data.length}</p>
+                        ${sampleDataHtml}
+                        <p class="text-xs text-gray-500 mt-2">${totalItemsLabel}: ${totalItemsDisplay}</p>
                     </div>
                 ` : ''}
             </div>
         `;
     };
+
+    // Hàm render Cây Thư mục
+    const renderTopicTree = (levels) => {
+        const tabsHtml = levels.map((level, index) => `
+            <button class="tab-button ${index === 0 ? 'bg-purple-600 text-white' : 'bg-white text-gray-700 border border-gray-300'} px-4 py-2 text-sm font-medium rounded-t-lg transition duration-150 ease-in-out hover:bg-purple-500 hover:text-white"
+                    onclick="openLevel(event, '${level.level}')"
+                    id="tab-${level.level}">
+                ${level.level} (${level.word_count} từ)
+            </button>
+        `).join('');
+
+        const contentHtml = levels.map((level, index) => `
+            <div id="${level.level}" class="tab-content p-4 bg-white rounded-b-lg rounded-tr-lg border border-t-0 border-gray-200 ${index === 0 ? 'block' : 'hidden'}">
+                <h4 class="text-lg font-bold text-gray-800 mb-3">Level: ${level.level} (Tổng ${level.word_count} từ)</h4>
+                <ul class="space-y-2">
+                    ${level.topic_details.map(topic => `
+                        <li class="flex justify-between items-center bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition duration-150">
+                            <span class="text-gray-700 font-medium">Chủ đề: ${topic.topic}</span>
+                            <span class="text-sm font-bold text-purple-600">${topic.word_count} từ</span>
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+        `).join('');
+
+        return `
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Cấu trúc Dữ liệu Chi tiết (Cây Levels & Topics)</h2>
+                <div class="flex flex-wrap border-b border-gray-200">
+                    ${tabsHtml}
+                </div>
+                <div class="shadow-lg">
+                    ${contentHtml}
+                </div>
+            </div>
+             <script>
+                function openLevel(evt, levelName) {
+                    var i, tabcontent, tablinks;
+                    tabcontent = document.getElementsByClassName("tab-content");
+                    for (i = 0; i < tabcontent.length; i++) {
+                        tabcontent[i].style.display = "none";
+                    }
+                    tablinks = document.getElementsByClassName("tab-button");
+                    for (i = 0; i < tablinks.length; i++) {
+                        tablinks[i].classList.remove("bg-purple-600", "text-white");
+                        tablinks[i].classList.add("bg-white", "text-gray-700");
+                    }
+                    document.getElementById(levelName).style.display = "block";
+                    evt.currentTarget.classList.remove("bg-white", "text-gray-700");
+                    evt.currentTarget.classList.add("bg-purple-600", "text-white");
+                }
+                
+                // Mặc định mở tab đầu tiên khi tải
+                document.addEventListener('DOMContentLoaded', () => {
+                    const firstTab = document.querySelector('.tab-button');
+                    if(firstTab) {
+                        firstTab.click();
+                    }
+                });
+             </script>
+        `;
+    };
+
 
     const htmlContent = `
         <!DOCTYPE html>
@@ -218,7 +321,6 @@ module.exports = async (req, res) => {
                     <p class="text-gray-600 mt-2">Trạng thái đồng bộ dữ liệu từ Google Sheet CSV.</p>
                 </header>
 
-                <!-- Thống kê Server -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-blue-500">
                         <p class="text-sm font-medium text-gray-500">Thời gian bắt đầu dự án</p>
@@ -237,7 +339,6 @@ module.exports = async (req, res) => {
                     </div>
                 </div>
                 
-                <!-- Thống kê dữ liệu CSV tổng quát -->
                 <h2 class="text-2xl font-bold text-gray-800 mb-4">Thống kê Dữ liệu Tổng quát (CSV)</h2>
                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
                     <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-green-500">
@@ -257,9 +358,9 @@ module.exports = async (req, res) => {
                     </div>
                 </div>
 
+                ${renderTopicTree(levelsArray)}
 
-                <!-- Bảng kiểm tra API -->
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">Kiểm tra Endpoints</h2>
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Kiểm tra Endpoints (Kiểm tra API tự động)</h2>
                 
                 ${renderDataBox(
                     '1. Danh sách Levels (Level Array)', 
@@ -275,7 +376,7 @@ module.exports = async (req, res) => {
                     `/api/vocabulary/list-topics?level=${testLevel || 'N/A'}`
                 )}
                 
-                 ${renderDataBox(
+                ${renderDataBox(
                     `3. Nội dung Bài học (Test Topic: ${testTopic || 'N/A'})`,
                     lessonStatus, 
                     lessonStatus.data,
