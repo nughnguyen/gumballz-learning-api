@@ -43,18 +43,26 @@ module.exports = async (req, res) => {
         return;
     }
     
-    const slug = req.query.slug; 
+    let slug = req.query.slug; 
     
-    // Đã sửa: Kiểm tra và xử lý mạnh mẽ hơn để tránh lỗi 400
-    if (!Array.isArray(slug) || slug.length < 2) {
+    // Đảm bảo slug là một mảng: xử lý trường hợp Vercel trả về chuỗi đơn ("A1/Animals")
+    if (!Array.isArray(slug)) {
+        slug = (typeof slug === 'string' && slug.length > 0) ? slug.split('/') : [];
+    }
+    
+    // Kiểm tra tính hợp lệ cơ bản
+    if (slug.length < 2) {
         return res.status(400).json({ success: false, message: "Thiếu Level và Topic trong đường dẫn (/api/lesson/[LEVEL]/[TOPIC])." });
     }
     
-    // Lấy Level và Topic từ mảng slug
+    // Lấy Level
     const requestedLevel = slug[0].toUpperCase().trim();
     
-    // Fix: Nối tất cả các phần tử còn lại (sau level) thành Topic, sau đó decode
-    const requestedTopic = decodeURIComponent(slug.slice(1).join('/')).trim(); 
+    // Lấy Topic: Nối tất cả các phần tử còn lại (sau Level)
+    const topicSegment = slug.slice(1).join('/');
+    
+    // Fix: DecodeURIComponent chỉ áp dụng cho toàn bộ Topic
+    const requestedTopic = decodeURIComponent(topicSegment).trim(); 
     
     if (!requestedLevel || !requestedTopic) {
          return res.status(400).json({ success: false, message: "Level hoặc Topic không được định dạng hợp lệ." });
