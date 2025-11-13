@@ -2,7 +2,7 @@ const fetch = require('node-fetch');
 const csv = require('csvtojson');
 
 // URL Google Sheet CSV của bạn
-const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTy8CweGTUMVlovuY8BwSwcjKKCHxKC7VGIGNnQ_Yuj6kxSg3R5h4kIifd_ZFRzdlK5aVzS3q4608v5/pub?gid=0&single=true&output=csv";
+const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/sheets/d/e/2PACX-1vTy8CweGTUMVlovuY8BwSwcjKKCHxKC7VGIGNnQ_Yuj6kxSg3R5h4kIifd_ZFRzdlK5aVzS3q4608v5/pub?gid=0&single=true&output=csv";
 
 // === THỐNG KÊ TOÀN CỤC (SỐNG TRONG THỜI GIAN INSTANCE WARM) ===
 let cachedData = null;
@@ -225,7 +225,6 @@ module.exports = async (req, res) => {
 
     // Hàm render Cây Thư mục
     const renderTopicTree = (levels) => {
-        // Tạo HTML cho các mục Level có thể collapse
         const contentHtml = levels.map((level, index) => `
             <div class="level-container bg-white rounded-xl shadow-lg mb-4">
                 <div class="level-header p-4 cursor-pointer bg-purple-100 hover:bg-purple-200 rounded-t-xl" 
@@ -258,7 +257,6 @@ module.exports = async (req, res) => {
             </div>
         `).join('');
 
-        // HTML và JS cho Collapse và Sort
         return `
             <div class="mt-8 mb-8">
                 <h2 class="text-2xl font-bold text-gray-800 mb-4">Cấu trúc Dữ liệu Chi tiết (Cây Levels & Topics)</h2>
@@ -309,22 +307,21 @@ module.exports = async (req, res) => {
                         return 0;
                     });
 
-                    // Xóa và chèn lại các mục đã sắp xếp
                     topicItems.forEach(item => topicListElement.appendChild(item));
                     
-                    // Cập nhật trạng thái nút (màu)
                     document.querySelectorAll(\`[data-level="\${levelName}"].sort-button\`).forEach(btn => {
                         btn.classList.remove('bg-purple-500', 'text-white');
                         btn.classList.add('bg-gray-200', 'text-gray-800');
                     });
                     
-                    // Tìm nút vừa được bấm để đổi màu
-                    document.querySelector(\`[data-level="\${levelName}"][data-sort-by="\${sortBy}"][data-direction="\${direction}"]\`).classList.remove('bg-gray-200', 'text-gray-800');
-                    document.querySelector(\`[data-level="\${levelName}"][data-sort-by="\${sortBy}"][data-direction="\${direction}"]\`).classList.add('bg-purple-500', 'text-white');
+                    const activeBtn = document.querySelector(\`[data-level="\${levelName}"][data-sort-by="\${sortBy}"][data-direction="\${direction}"]\`);
+                    if(activeBtn) {
+                        activeBtn.classList.remove('bg-gray-200', 'text-gray-800');
+                        activeBtn.classList.add('bg-purple-500', 'text-white');
+                    }
                 }
 
                 document.addEventListener('DOMContentLoaded', () => {
-                    // Gán sự kiện cho các nút sắp xếp
                     document.querySelectorAll('.sort-button').forEach(button => {
                         button.addEventListener('click', function() {
                             const level = this.getAttribute('data-level');
@@ -333,38 +330,38 @@ module.exports = async (req, res) => {
                             sortTopics(level, sortBy, direction);
                         });
                     });
-                    
-                    // Mặc định sắp xếp theo Tên A-Z cho tất cả Levels khi load
-                    // levelData.forEach(level => {
-                    //     sortTopics(level.level, 'topic', 'asc');
-                    // });
                 });
              </script>
         `;
     };
 
-    // Hàm render Footer
+    // Hàm render Footer (Đã thay đổi ICON và ANIMATION)
     const renderFooter = () => {
         const contactInfo = [
             { label: 'Facebook', value: 'hungnq188.2k5', link: 'https://www.facebook.com/hungnq188.2k5', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z' },
-            { label: 'YouTube', value: '@nughnguyen', link: 'https://www.youtube.com/@nughnguyen', icon: 'M19.615 3.184c-3.197-.73-9.458-.73-12.656 0C3.12 3.864 1 6.848 1 12s2.12 8.136 5.959 8.816c3.198.73 9.457.73 12.656 0 3.84-1.28 5.959-4.264 5.959-8.816s-2.12-8.136-5.959-8.816zM10 15v-6l5 3-5 3z' },
-            { label: 'Instagram', value: 'hq.hnug', link: 'https://www.instagram.com/hq.hnug', icon: 'M15 12c0 1.657-1.343 3-3 3s-3-1.343-3-3 1.343-3 3-3 3 1.343 3 3z' },
-            { label: 'Discord', value: 'dsc.gg/thenoicez', link: 'https://dsc.gg/thenoicez', icon: 'M18.85 2.19c-2.32-.96-4.66-1.55-7.07-1.55-2.4 0-4.75.59-7.07 1.55-2.42 1.01-4.22 3.1-4.59 5.86-.54 8.01 4.5 13.79 4.5 13.79s2.47 1.62 5.66 1.62c3.19 0 5.66-1.62 5.66-1.62s5.04-5.78 4.5-13.79c-.37-2.76-2.17-4.85-4.59-5.86zM9 16c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zM15 16c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z' },
-            { label: 'Email', value: 'hungnq.august.work@gmail.com', link: 'mailto:hungnq.august.work@gmail.com', icon: 'M3 8l7.89 5.26c.38.25.79.37 1.2.37.41 0 .82-.12 1.2-.37L21 8m-2 10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h14a2 2 0 012 2v10z' },
+            { label: 'YouTube', value: '@nughnguyen', link: 'https://www.youtube.com/@nughnguyen', icon: 'M22.54 6.42A1.88 1.88 0 0021 5c-1.28-.6-12-1.2-12-1.2s-10.72.6-12 1.2a1.88 1.88 0 00-1.54 1.42C3 11.22 3 15 3 15s.6 3.78 1.46 4.62c1.28.6 12 1.2 12 1.2s10.72-.6 12-1.2a1.88 1.88 0 001.54-1.42c.54-4.8.54-8.58.54-8.58s-.02-3.78-.54-8.58zM10 15V9l5 3-5 3z' }, 
+            { label: 'Instagram', value: 'hq.hnug', link: 'https://www.instagram.com/hq.hnug', icon: 'M16 3H8a5 5 0 00-5 5v8a5 5 0 005 5h8a5 5 0 005-5V8a5 5 0 00-5-5zM12 17a5 5 0 110-10 5 5 0 010 10zM17.5 6.5h.01' },
+            { label: 'Discord', value: 'dsc.gg/thenoicez', link: 'https://dsc.gg/thenoicez', icon: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z' },
+            { label: 'Email', value: 'hungnq.august.work@gmail.com', link: 'mailto:hungnq.august.work@gmail.com', icon: 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM20 6l-8 5-8-5' },
             { label: 'LinkedIn', value: 'hungnq-august', link: 'https://www.linkedin.com/in/hungnq-august/', icon: 'M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14zM8 17V9h3v8H8zM7 7.25A1.25 1.25 0 005.75 6a1.25 1.25 0 00-1.25 1.25 1.25 1.25 0 001.25 1.25 1.25 1.25 0 001.25-1.25z' },
-            { label: 'TikTok', value: 'nq.hnug', link: 'https://www.tiktok.com/@nq.hnug', icon: 'M20 17.5a.5.5 0 01-.5.5H16V14h3v3.5a.5.5 0 01-.5.5z' },
-            { label: 'Phone', value: '0388205003 / 0923056036', link: 'tel:0388205003', icon: 'M3 5a1 1 0 011-1h3a1 1 0 01.993.883l.1 1.766A1 1 0 017.02 8.01l-1.04-.4a.5.5 0 00-.5.127 8.003 8.003 0 005.748 5.748.5.5 0 00.127-.501l-.4-1.04a1 1 0 011.028-1.07l1.766.1a1 1 0 01.883.993v3a1 1 0 01-1 1H4a1 1 0 01-1-1V5z' },
-            { label: 'Zalo', value: 'Hưng (0923056036)', link: 'https://zalo.me/0923056036', icon: 'M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm1.2 13h-2.4c-.662 0-1.2-.538-1.2-1.2V9.2c0-.662.538-1.2 1.2-1.2h2.4c.662 0 1.2.538 1.2 1.2v4.6c0 .662-.538 1.2-1.2 1.2z' },
-            { label: 'Website', value: 'guns.lol/nguyenquochung', link: 'https://guns.lol/nguyenquochung', icon: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z' }
+            { label: 'TikTok', value: 'nq.hnug', link: 'https://www.tiktok.com/@nq.hnug', icon: 'M23 7l-8.79 5.86-5.86-8.79-1.47 1.47 8.79 5.86 5.86 8.79-1.47 1.47 5.86-8.79z' },
+            { label: 'Phone', value: '0388205003 / 0923056036', link: 'tel:0388205003', icon: 'M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.63A2 2 0 014.08 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z' },
+            { label: 'Zalo', value: 'Hưng (0923056036)', link: 'https://zalo.me/0923056036', icon: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z' },
+            { label: 'Website', value: 'guns.lol/nguyenquochung', link: 'https://guns.lol/nguyenquochung', icon: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' }
         ];
 
         return `
             <footer class="mt-16 pt-8 pb-4 bg-gray-900 text-white border-t-4 border-purple-600">
                 <div class="container mx-auto px-4 sm:px-8">
-                    <div class="text-center mb-6">
+                    <div class="text-center mb-6 relative">
                         <span class="text-xs text-gray-400 block mb-2">Developed & Maintained by</span>
-                        <div class="inline-block text-2xl font-extrabold tracking-wider text-white">
-                            <span class="quoc-hung-text">Quoc Hung</span>
+                        <div class="inline-block text-2xl font-extrabold tracking-wider text-white relative">
+                            <span class="quoc-hung-text relative z-10">Quoc Hung</span>
+                            <div class="heart-container">
+                                <span class="heart-bubble heart-1"></span>
+                                <span class="heart-bubble heart-2"></span>
+                                <span class="heart-bubble heart-3"></span>
+                            </div>
                         </div>
                     </div>
 
@@ -385,14 +382,102 @@ module.exports = async (req, res) => {
                     </p>
                 </div>
                 <style>
-                    @keyframes neonPulse {
+                    /* Animation cho chữ Quoc Hung */
+                    @keyframes textBlink {
                         0%, 100% { color: #f3e8ff; text-shadow: 0 0 5px #9333ea, 0 0 10px #9333ea; }
                         50% { color: #ffffff; text-shadow: 0 0 10px #a78bfa, 0 0 20px #8b5cf6; }
                     }
                     .quoc-hung-text {
-                        animation: neonPulse 2s ease-in-out infinite;
+                        animation: textBlink 2s ease-in-out infinite;
                         text-transform: uppercase;
+                        display: inline-block;
+                        position: relative;
                     }
+
+                    /* Hiệu ứng bong bóng trái tim */
+                    .heart-container {
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        width: 100%;
+                        height: 100%;
+                        overflow: hidden;
+                        pointer-events: none;
+                    }
+
+                    .heart-bubble {
+                        position: absolute;
+                        background-color: #ff69b4;
+                        border-radius: 50%;
+                        opacity: 0;
+                        transform: scale(0);
+                        animation-fill-mode: forwards;
+                        pointer-events: none;
+                    }
+
+                    /* Định nghĩa hình trái tim bằng CSS */
+                    .heart-bubble::before,
+                    .heart-bubble::after {
+                        content: '';
+                        position: absolute;
+                        width: 100%;
+                        height: 100%;
+                        background-color: inherit;
+                        border-radius: 50%;
+                    }
+
+                    /* Để tạo hình dạng trái tim */
+                    .heart-bubble::before {
+                        top: -50%;
+                        left: 0;
+                    }
+
+                    .heart-bubble::after {
+                        top: 0;
+                        left: 50%;
+                        transform: translateX(-50%) rotate(90deg);
+                    }
+
+                    /* Animation cho bong bóng nổ */
+                    @keyframes heartPop {
+                        0% {
+                            transform: translate(-50%, 0) scale(0);
+                            opacity: 0;
+                        }
+                        20% {
+                            opacity: 0.8;
+                            transform: translate(-50%, -20%) scale(0.6);
+                        }
+                        80% {
+                            opacity: 0;
+                            transform: translate(-50%, -100%) scale(1.2);
+                        }
+                        100% {
+                            opacity: 0;
+                            transform: translate(-50%, -120%) scale(1.3);
+                        }
+                    }
+
+                    .heart-1 {
+                        width: 10px; height: 10px;
+                        animation: heartPop 3s ease-out infinite;
+                        animation-delay: 0.5s;
+                        left: 40%; top: 70%;
+                    }
+                    .heart-2 {
+                        width: 12px; height: 12px;
+                        animation: heartPop 3s ease-out infinite;
+                        animation-delay: 1.5s;
+                        left: 60%; top: 80%;
+                    }
+                    .heart-3 {
+                        width: 8px; height: 8px;
+                        animation: heartPop 3s ease-out infinite;
+                        animation-delay: 2.5s;
+                        left: 50%; top: 60%;
+                    }
+
                 </style>
             </footer>
         `;
