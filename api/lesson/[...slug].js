@@ -1,4 +1,4 @@
-// api/lesson/[...slug].js
+// api/lesson/[...slug].js (Đã sửa lỗi)
 const fetch = require('node-fetch');
 const csv = require('csvtojson');
 
@@ -45,13 +45,23 @@ module.exports = async (req, res) => {
     
     const slug = req.query.slug; 
     
-    if (!slug || slug.length < 2) {
-        return res.status(400).json({ success: false, message: "Thiếu Level và Topic trong đường dẫn." });
+    // Vấn đề: Kiểm tra mạnh mẽ hơn. Nếu slug không phải mảng, hoặc độ dài không đủ.
+    if (!Array.isArray(slug) || slug.length < 2) {
+        return res.status(400).json({ success: false, message: "Thiếu Level và Topic trong đường dẫn (/api/lesson/[LEVEL]/[TOPIC])." });
     }
     
     // Giả định đường dẫn là /api/lesson/A1/Hello and Goodbye
+    // Lấy Level và Topic từ mảng slug
     const requestedLevel = slug[0].toUpperCase().trim();
-    const requestedTopic = decodeURIComponent(slug[1]).trim(); 
+    
+    // Nối các phần tử còn lại (nếu Topic có chứa dấu /) và sau đó decode
+    const requestedTopic = decodeURIComponent(slug.slice(1).join('/')).trim(); 
+    
+    // Kiểm tra tính hợp lệ cuối cùng (chủ yếu để bắt lỗi trong CSV)
+    if (!requestedLevel || !requestedTopic) {
+         return res.status(400).json({ success: false, message: "Level hoặc Topic không được định dạng hợp lệ." });
+    }
+
 
     try {
         const data = await getAndParseData();
@@ -65,7 +75,7 @@ module.exports = async (req, res) => {
         if (lessonData.length === 0) {
             return res.status(404).json({ 
                 success: false, 
-                message: "Không tìm thấy bài học cho Level này và Topic này.", 
+                message: `Không tìm thấy từ vựng cho Level ${requestedLevel} và Topic ${requestedTopic}. Vui lòng kiểm tra dữ liệu nguồn.`, 
                 data: [] 
             });
         }
@@ -83,4 +93,4 @@ module.exports = async (req, res) => {
             data: [],
         });
     }
-}; 
+};
