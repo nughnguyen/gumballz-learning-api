@@ -221,7 +221,7 @@ module.exports = async (req, res) => {
                 <!-- Thống kê Server -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-blue-500">
-                        <p class="text-sm font-medium text-gray-500">Thời gian khởi động cố định</p>
+                        <p class="text-sm font-medium text-gray-500">Thời gian bắt đầu dự án</p>
                         <p class="text-2xl font-bold text-gray-800 mt-1">${formatTime(serverStartTime)}</p>
                         <p class="text-sm text-gray-500 mt-1">Giờ Việt Nam (GMT+7).</p>
                     </div>
