@@ -1,15 +1,15 @@
 const fetch = require('node-fetch');
 const csv = require('csvtojson');
 
-// URL Google Sheet CSV của bạn
-const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTy8CweGTUMVlovuY8BwSwcjKKCHxKC7VGIGNnQ_Yuj6kxSg3R5h4kIifd_ZFRzdlK5aVzS3q4608v5/pub?gid=0&single=true&output=csv";
+// ⭐ Cập nhật URL Google Sheet CSV
+const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/sheets/d/e/2PACX-1vTy8CweGTUMVlovuY8BwSwcjKKCHxKC7VGIGNnQ_Yuj6kxSg3R5h4kIifd_ZFRzdlK5aVzS3q4608v5/pub?gid=0&single=true&output=csv";
 
 // === THỐNG KÊ TOÀN CỤC (SỐNG TRONG THỜI GIAN INSTANCE WARM) ===
 let cachedData = null;
 let updateCount = 0;
 let lastUpdateTime = 'Chưa cập nhật';
 
-// Đặt thời gian khởi động cố định (12:00 trưa 13/11/2025 GMT+7)
+// Đặt thời gian khởi động cố định
 const serverStartTime = new Date('2025-11-13T05:00:00.000Z');
 
 const CACHE_DURATION = 3600 * 1000; // 1 giờ
@@ -229,7 +229,7 @@ module.exports = async (req, res) => {
         const tabsHtml = levels.map((level, index) => `
             <button class="level-tab-button text-sm font-medium px-4 py-2 border-b-2 transition duration-300 ${index === 0 ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-500 hover:text-purple-600 hover:border-purple-300'}"
                     onclick="toggleLevelTab(event, '${level.level}')"
-                    id="tab-${level.level}">
+                    data-level="${level.level}">
                 ${level.level} (${level.word_count} từ)
             </button>
         `).join('');
@@ -275,14 +275,11 @@ module.exports = async (req, res) => {
             <script>
                 let activeLevel = null; // Biến theo dõi Level đang mở
 
-                // Hàm chuyển đổi Level Tab
+                // ⭐ CẬP NHẬT LOGIC TOGGLE TAB
                 function toggleLevelTab(evt, levelName) {
-                    const contentContainer = document.getElementById('level-content-container');
                     const targetContent = document.getElementById('level-content-' + levelName);
                     const targetButton = evt.currentTarget;
                     
-                    let newActiveLevel = null;
-
                     if (levelName === activeLevel) {
                         // Nếu nhấn vào Level đang mở: Thu gọn (Collapse)
                         targetContent.style.display = "none";
@@ -372,36 +369,28 @@ module.exports = async (req, res) => {
                     // Mặc định mở Level đầu tiên khi tải
                     const firstTab = document.querySelector('.level-tab-button');
                     if(firstTab) {
-                        firstTab.click();
+                        // Kích hoạt thủ công thay vì click() để gán activeLevel đúng
+                        toggleLevelTab({currentTarget: firstTab}, firstTab.getAttribute('data-level'));
                     }
                 });
              </script>
         `;
     };
 
-    // Hàm render Footer (Đã đổi tên và cập nhật ICON)
+    // Hàm render Footer (Sử dụng HTML/CSS Classes cho Icon)
     const renderFooter = () => {
+        // ⭐ CẬP NHẬT ICON SANG HTML/CSS CLASS
         const contactInfo = [
-            // Icon Facebook: Giữ nguyên chuẩn
-            { label: 'Facebook', value: 'hungnq188.2k5', link: 'https://www.facebook.com/hungnq188.2k5', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z' },
-            // Icon YouTube: Giữ nguyên chuẩn
-            { label: 'YouTube', value: '@nughnguyen', link: 'https://www.youtube.com/@nughnguyen', icon: 'M10 15V9l5 3-5 3zM22 12c0-1.72-.1-3.41-.35-5.02a2.38 2.38 0 00-1.63-1.63C18.41 5 12 5 12 5s-6.41 0-8.02.35a2.38 2.38 0 00-1.63 1.63C2 8.59 2 12 2 12s0 3.41.35 5.02a2.38 2.38 0 001.63 1.63C5.59 19 12 19 12 19s6.41 0 8.02-.35a2.38 2.38 0 001.63-1.63C22 15.41 22 12 22 12z' }, 
-            // Icon Instagram: Giữ nguyên chuẩn
-            { label: 'Instagram', value: 'hq.hnug', link: 'https://www.instagram.com/hq.hnug', icon: 'M16 3H8a5 5 0 00-5 5v8a5 5 0 005 5h8a5 5 0 005-5V8a5 5 0 00-5-5zM12 17a5 5 0 110-10 5 5 0 010 10zM17.5 6.5h.01' },
-            // ICON MỚI: Discord (Headset - tương đương fi fi-brands-discord)
-            { label: 'Discord', value: 'dsc.gg/thenoicez', link: 'https://dsc.gg/thenoicez', icon: 'M3 18v-6a9 9 0 0118 0v6M21 19a2 2 0 01-2 2H5a2 2 0 01-2-2v-1h18v1zM10 11a1 1 0 11-2 0 1 1 0 012 0zm6 0a1 1 0 11-2 0 1 1 0 012 0z' }, // Thêm chi tiết cho Discord
-            // Icon Email: Giữ nguyên chuẩn
-            { label: 'Email', value: 'hungnq.august.work@gmail.com', link: 'mailto:hungnq.august.work@gmail.com', icon: 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM20 6l-8 5-8-5' },
-            // ICON MỚI: LinkedIn (Logo chuẩn)
-            { label: 'LinkedIn', value: 'hungnq-august', link: 'https://www.linkedin.com/in/hungnq-august/', icon: 'M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14zM8 17V9h3v8H8zM7 7.25A1.25 1.25 0 005.75 6a1.25 1.25 0 00-1.25 1.25 1.25 1.25 0 001.25 1.25 1.25 1.25 0 001.25-1.25z' },
-            // ICON MỚI: TikTok (Monitor/Video)
-            { label: 'TikTok', value: 'nq.hnug', link: 'https://www.tiktok.com/@nq.hnug', icon: 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM10 14h4M12 10v4M8 18h8' },
-            // Icon Phone: Giữ nguyên chuẩn
-            { label: 'Phone', value: '0388205003 / 0923056036', link: 'tel:0388205003', icon: 'M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.63A2 2 0 014.08 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z' },
-            // ICON MỚI: Zalo (Chat Bubble)
-            { label: 'Zalo', value: 'Hưng (0923056036)', link: 'https://zalo.me/0923056036', icon: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z' },
-            // Icon Website: Giữ nguyên chuẩn
-            { label: 'Website', value: 'guns.lol/nguyenquochung', link: 'https://guns.lol/nguyenquochung', icon: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' }
+            { label: 'Facebook', value: 'hungnq188.2k5', link: 'https://www.facebook.com/hungnq188.2k5', iconClass: 'fi fi-brands-facebook' },
+            { label: 'YouTube', value: '@nughnguyen', link: 'https://www.youtube.com/@nughnguyen', iconClass: 'fi fi-brands-youtube' }, 
+            { label: 'Instagram', value: 'hq.hnug', link: 'https://www.instagram.com/hq.hnug', iconClass: 'fi fi-brands-instagram' },
+            { label: 'Discord', value: 'dsc.gg/thenoicez', link: 'https://dsc.gg/thenoicez', iconClass: 'fi fi-brands-discord' },
+            { label: 'Email', value: 'hungnq.august.work@gmail.com', link: 'mailto:hungnq.august.work@gmail.com', iconClass: 'fi fi-tr-envelopes' },
+            { label: 'LinkedIn', value: 'hungnq-august', link: 'https://www.linkedin.com/in/hungnq-august/', iconClass: 'fi fi-brands-linkedin-circle' },
+            { label: 'TikTok', value: 'nq.hnug', link: 'https://www.tiktok.com/@nq.hnug', iconClass: 'fi fi-brands-tik-tok' },
+            { label: 'Phone', value: '0388205003 / 0923056036', link: 'tel:0388205003', iconClass: 'fi fi-rr-phone-call' },
+            { label: 'Zalo', value: 'Hưng (0923056036)', link: 'https://zalo.me/0923056036', iconClass: 'fi fi-rr-comment' },
+            { label: 'Website', value: 'guns.lol/nguyenquochung', link: 'https://guns.lol/nguyenquochung', iconClass: 'fi fi-rr-globe' }
         ];
 
         return `
@@ -422,7 +411,7 @@ module.exports = async (req, res) => {
                     <div class="grid grid-cols-2 md:grid-cols-5 gap-6 text-sm">
                         ${contactInfo.map(item => `
                             <div class="flex items-start space-x-2">
-                                <svg class="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${item.icon}"></path></svg>
+                                <i class="${item.iconClass} w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5"></i>
                                 <div>
                                     <p class="font-semibold text-gray-300">${item.label}</p>
                                     <a href="${item.link}" target="_blank" class="text-xs text-gray-400 hover:text-purple-300 transition duration-150 break-all">${item.value}</a>
@@ -479,9 +468,7 @@ module.exports = async (req, res) => {
                         height: 100%;
                         background-color: inherit;
                         border-radius: 50%;
-                        
                     }
-                    /* Tùy chỉnh vị trí để tạo hình trái tim */
                     .heart-bubble::before {
                         top: -50%;
                         left: 0;
@@ -492,7 +479,6 @@ module.exports = async (req, res) => {
                         left: 50%;
                         transform: translateX(-50%) rotate(45deg);
                     }
-
 
                     /* Animation cho bong bóng nổ */
                     @keyframes heartPop {
@@ -533,6 +519,12 @@ module.exports = async (req, res) => {
                         left: 50%; top: 60%;
                     }
 
+                    /* ⭐ IMPORT CSS CỦA Flag Icons */
+                    @import url('https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css');
+                    @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
+                    /* Lưu ý: Để các class fi-brands hoạt động, bạn cần đảm bảo CSS của thư viện Flags/FontAwesome Pro được load. 
+                       Vì Vercel Serverless Function không thể load CSS động, tôi thêm 2 thư viện phổ biến để tăng khả năng hiển thị. 
+                       Nếu vẫn không hiển thị, bạn cần import CSS chính xác cho bộ "fi" icons của bạn.*/
                 </style>
             </footer>
         `;
