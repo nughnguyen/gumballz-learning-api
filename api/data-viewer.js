@@ -8,13 +8,18 @@ const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT
 let cachedData = null;
 let updateCount = 0;
 let lastUpdateTime = 'Chưa cập nhật';
-const serverStartTime = new Date();
+
+// ✅ ĐÃ THAY ĐỔI: Đặt thời gian khởi động cố định (12:00 trưa 13/11/2025 GMT+7)
+// Tương đương với 2025-11-13T05:00:00.000Z
+const serverStartTime = new Date('2025-11-13T05:00:00.000Z');
+
 const CACHE_DURATION = 3600 * 1000; // 1 giờ
 
 // Hàm format thời gian
 const formatTime = (date) => {
     if (date === 'Chưa cập nhật') return date;
-    return date.toLocaleString('vi-VN', {
+    // Sử dụng 'Asia/Ho_Chi_Minh' để hiển thị thời gian chính xác theo giờ Việt Nam
+    return new Date(date).toLocaleString('vi-VN', {
         timeZone: 'Asia/Ho_Chi_Minh',
         year: 'numeric',
         month: '2-digit',
@@ -29,14 +34,20 @@ const formatTime = (date) => {
 // Hàm tính Uptime
 const formatUptime = (start) => {
     const diff = new Date().getTime() - start.getTime();
+    if (diff < 0) return "Đã đặt giờ trong tương lai"; 
+    
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-    if (days > 0) return `${days} ngày ${hours} giờ`;
-    if (hours > 0) return `${hours} giờ ${minutes} phút`;
-    if (minutes > 0) return `${minutes} phút ${seconds} giây`;
-    return `${seconds} giây`;
+    
+    let parts = [];
+    if (days > 0) parts.push(`${days} ngày`);
+    if (hours > 0) parts.push(`${hours} giờ`);
+    if (minutes > 0) parts.push(`${minutes} phút`);
+    if (parts.length === 0) parts.push(`${seconds} giây`);
+    
+    return parts.join(' ');
 };
 
 // Hàm lấy và phân tích dữ liệu CSV (Đã tích hợp thống kê)
@@ -85,7 +96,7 @@ module.exports = async (req, res) => {
     
     const BASE_URL = `https://${req.headers.host}`;
     
-    // 2. Chạy thử các Endpoints (Sử dụng dữ liệu cached thay vì gọi API nội bộ)
+    // 2. Xử lý logic hiển thị
     
     const levelMap = rawData.reduce((acc, row) => {
         const level = row.level.toUpperCase().trim();
@@ -117,7 +128,7 @@ module.exports = async (req, res) => {
     if (levelsArray.length > 0) {
         testLevel = levelsArray[0].level;
         
-        // Giả lập logic Topics
+        // Giả lập logic Topics (Sử dụng dữ liệu cached thay vì gọi API)
         const filteredData = rawData.filter(row => row.level && row.level.toUpperCase().trim() === testLevel);
         const topicMap = filteredData.reduce((acc, row) => {
             if (!row.topic) return acc;
@@ -210,19 +221,19 @@ module.exports = async (req, res) => {
                 <!-- Thống kê Server -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-blue-500">
-                        <p class="text-sm font-medium text-gray-500">Trạng thái Instance</p>
-                        <p class="text-2xl font-bold text-gray-800 mt-1">HOẠT ĐỘNG</p>
-                        <p class="text-sm text-gray-500 mt-1">Uptime: ${formatUptime(serverStartTime)}</p>
+                        <p class="text-sm font-medium text-gray-500">Thời gian khởi động cố định</p>
+                        <p class="text-2xl font-bold text-gray-800 mt-1">${formatTime(serverStartTime)}</p>
+                        <p class="text-sm text-gray-500 mt-1">Giờ Việt Nam (GMT+7).</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-yellow-500">
+                        <p class="text-sm font-medium text-gray-500">Thời gian hoạt động (Uptime)</p>
+                        <p class="text-2xl font-bold text-gray-800 mt-1">${formatUptime(serverStartTime)}</p>
+                        <p class="text-sm text-gray-500 mt-1">Tính từ mốc 12h ngày 13/11/2025.</p>
                     </div>
                     <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-purple-500">
                         <p class="text-sm font-medium text-gray-500">Cập nhật gần nhất</p>
                         <p class="text-2xl font-bold text-gray-800 mt-1">${formatTime(lastUpdateTime)}</p>
-                        <p class="text-sm text-gray-500 mt-1">Tự động tải lại sau 1 giờ.</p>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-yellow-500">
-                        <p class="text-sm font-medium text-gray-500">Số lần đồng bộ</p>
-                        <p class="text-2xl font-bold text-gray-800 mt-1">${updateCount}</p>
-                        <p class="text-sm text-gray-500 mt-1">Kể từ khi instance khởi động.</p>
+                        <p class="text-sm text-gray-500 mt-1">Số lần đồng bộ: ${updateCount}</p>
                     </div>
                 </div>
                 
