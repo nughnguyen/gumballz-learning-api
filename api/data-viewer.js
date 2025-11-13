@@ -17,7 +17,6 @@ const CACHE_DURATION = 3600 * 1000; // 1 giờ
 // Hàm format thời gian
 const formatTime = (date) => {
     if (date === 'Chưa cập nhật') return date;
-    // Sử dụng 'Asia/Ho_Chi_Minh' để hiển thị thời gian chính xác theo giờ Việt Nam
     return new Date(date).toLocaleString('vi-VN', {
         timeZone: 'Asia/Ho_Chi_Minh',
         year: 'numeric',
@@ -118,7 +117,6 @@ module.exports = async (req, res) => {
             level: item.level,
             word_count: item.word_count,
             topic_count: item.topicSet.size,
-            // Lưu chi tiết topics dưới dạng mảng
             topic_details: Object.values(item.topics).sort((a, b) => a.topic.localeCompare(b.topic))
         }))
         .sort((a, b) => a.level.localeCompare(b.level));
@@ -227,85 +225,66 @@ module.exports = async (req, res) => {
 
     // Hàm render Cây Thư mục
     const renderTopicTree = (levels) => {
-        // Tạo HTML cho các nút Tabs
-        const tabsHtml = levels.map((level, index) => `
-            <button class="tab-button ${index === 0 ? 'bg-purple-600 text-white' : 'bg-white text-gray-700 border border-gray-300'} px-4 py-2 text-sm font-medium rounded-t-lg transition duration-150 ease-in-out hover:bg-purple-500 hover:text-white"
-                    onclick="openLevel(event, '${level.level}')"
-                    id="tab-${level.level}">
-                ${level.level} (${level.word_count} từ)
-            </button>
-        `).join('');
-
-        // Tạo HTML cho nội dung Tabs (Cây thư mục)
+        // Tạo HTML cho các mục Level có thể collapse
         const contentHtml = levels.map((level, index) => `
-            <div id="${level.level}" class="tab-content p-4 bg-white rounded-b-lg rounded-tr-lg border border-t-0 border-gray-200 ${index === 0 ? 'block' : 'hidden'}">
-                <h4 class="text-lg font-bold text-gray-800 mb-3">Level: ${level.level} (Tổng ${level.word_count} từ, ${level.topic_count} chủ đề)</h4>
-                
-                <div class="flex flex-wrap gap-2 mb-4">
-                    <span class="text-sm font-medium text-gray-500 mr-2">Sắp xếp:</span>
-                    <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="topic" data-direction="asc">Tên A-Z</button>
-                    <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="topic" data-direction="desc">Tên Z-A</button>
-                    <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="count" data-direction="desc">Từ (Nhiều > Ít)</button>
-                    <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="count" data-direction="asc">Từ (Ít > Nhiều)</button>
+            <div class="level-container bg-white rounded-xl shadow-lg mb-4">
+                <div class="level-header p-4 cursor-pointer bg-purple-100 hover:bg-purple-200 rounded-t-xl" 
+                     onclick="toggleLevelCollapse(this, '${level.level}')" 
+                     data-level="${level.level}">
+                    <h4 class="text-lg font-bold text-purple-800 flex justify-between items-center">
+                        Level: ${level.level} (Tổng ${level.word_count} từ, ${level.topic_count} chủ đề)
+                        <span class="collapse-icon text-xl transition-transform duration-300 transform rotate-0">▼</span>
+                    </h4>
                 </div>
+                
+                <div id="level-content-${level.level}" class="level-content-area p-4 hidden">
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <span class="text-sm font-medium text-gray-500 mr-2">Sắp xếp:</span>
+                        <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="topic" data-direction="asc">Tên A-Z</button>
+                        <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="topic" data-direction="desc">Tên Z-A</button>
+                        <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="count" data-direction="desc">Từ (Nhiều > Ít)</button>
+                        <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="count" data-direction="asc">Từ (Ít > Nhiều)</button>
+                    </div>
 
-                <div id="topic-list-${level.level}" class="space-y-2">
-                    ${level.topic_details.map(topic => `
-                        <div class="topic-item bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition duration-150" data-topic-name="${topic.topic}" data-word-count="${topic.word_count}">
-                            <div class="flex justify-between items-center cursor-pointer collapsible-header" onclick="toggleCollapse(this)">
+                    <div id="topic-list-${level.level}" class="space-y-2">
+                        ${level.topic_details.map(topic => `
+                            <div class="topic-item bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition duration-150 flex justify-between items-center" data-topic-name="${topic.topic}" data-word-count="${topic.word_count}">
                                 <span class="text-gray-700 font-medium">Chủ đề: ${topic.topic}</span>
-                                <span class="text-sm font-bold text-purple-600">${topic.word_count} từ <span class="collapse-icon">▼</span></span>
+                                <span class="text-sm font-bold text-purple-600">${topic.word_count} từ</span>
                             </div>
-                            <div class="collapsible-content text-xs text-gray-500 mt-2 p-2 bg-white border border-gray-200 rounded hidden">
-                                <p>Thông tin chi tiết về các từ vựng trong chủ đề này sẽ được load qua API.</p>
-                                <p>Endpoint: <code>/api/lesson/${level.level}/${encodeURIComponent(topic.topic)}</code></p>
-                            </div>
-                        </div>
-                    `).join('')}
+                        `).join('')}
+                    </div>
                 </div>
             </div>
         `).join('');
 
-        // HTML và JS cho Tabs, Sort và Collapse
+        // HTML và JS cho Collapse và Sort
         return `
-            <div class="mb-8">
+            <div class="mt-8 mb-8">
                 <h2 class="text-2xl font-bold text-gray-800 mb-4">Cấu trúc Dữ liệu Chi tiết (Cây Levels & Topics)</h2>
-                <div class="flex flex-wrap border-b border-gray-200">
-                    ${tabsHtml}
-                </div>
-                <div class="shadow-lg">
+                <div id="levels-tree">
                     ${contentHtml}
                 </div>
             </div>
             <script>
-                // Dữ liệu Levels và Topics được truyền vào JS để xử lý sắp xếp
-                const levelData = ${JSON.stringify(levelsArray)};
-
-                function openLevel(evt, levelName) {
-                    var i, tabcontent, tablinks;
-                    tabcontent = document.getElementsByClassName("tab-content");
-                    for (i = 0; i < tabcontent.length; i++) {
-                        tabcontent[i].style.display = "none";
-                    }
-                    tablinks = document.getElementsByClassName("tab-button");
-                    for (i = 0; i < tablinks.length; i++) {
-                        tablinks[i].classList.remove("bg-purple-600", "text-white");
-                        tablinks[i].classList.add("bg-white", "text-gray-700", "border");
-                    }
-                    document.getElementById(levelName).style.display = "block";
-                    evt.currentTarget.classList.remove("bg-white", "text-gray-700", "border");
-                    evt.currentTarget.classList.add("bg-purple-600", "text-white");
-                }
-                
-                function toggleCollapse(header) {
-                    const content = header.nextElementSibling;
+                // Hàm thu gọn/mở rộng Level
+                function toggleLevelCollapse(header, levelName) {
+                    const content = document.getElementById('level-content-' + levelName);
                     const icon = header.querySelector('.collapse-icon');
+                    const levelContainer = header.closest('.level-container');
+                    
                     if (content.classList.contains('hidden')) {
+                        // Mở rộng
                         content.classList.remove('hidden');
-                        icon.textContent = '▲';
+                        icon.classList.remove('rotate-0');
+                        icon.classList.add('rotate-180');
+                        levelContainer.classList.add('rounded-b-none');
                     } else {
+                        // Thu gọn
                         content.classList.add('hidden');
-                        icon.textContent = '▼';
+                        icon.classList.remove('rotate-180');
+                        icon.classList.add('rotate-0');
+                        levelContainer.classList.remove('rounded-b-none');
                     }
                 }
 
@@ -332,28 +311,33 @@ module.exports = async (req, res) => {
 
                     // Xóa và chèn lại các mục đã sắp xếp
                     topicItems.forEach(item => topicListElement.appendChild(item));
+                    
+                    // Cập nhật trạng thái nút (màu)
+                    document.querySelectorAll(\`[data-level="\${levelName}"].sort-button\`).forEach(btn => {
+                        btn.classList.remove('bg-purple-500', 'text-white');
+                        btn.classList.add('bg-gray-200', 'text-gray-800');
+                    });
+                    
+                    // Tìm nút vừa được bấm để đổi màu
+                    document.querySelector(\`[data-level="\${levelName}"][data-sort-by="\${sortBy}"][data-direction="\${direction}"]\`).classList.remove('bg-gray-200', 'text-gray-800');
+                    document.querySelector(\`[data-level="\${levelName}"][data-sort-by="\${sortBy}"][data-direction="\${direction}"]\`).classList.add('bg-purple-500', 'text-white');
                 }
 
                 document.addEventListener('DOMContentLoaded', () => {
-                    const firstTab = document.querySelector('.tab-button');
-                    if(firstTab) {
-                        firstTab.click();
-                    }
-                    
+                    // Gán sự kiện cho các nút sắp xếp
                     document.querySelectorAll('.sort-button').forEach(button => {
                         button.addEventListener('click', function() {
                             const level = this.getAttribute('data-level');
                             const sortBy = this.getAttribute('data-sort-by');
                             const direction = this.getAttribute('data-direction');
                             sortTopics(level, sortBy, direction);
-                            
-                            // Đổi màu nút đang active
-                            document.querySelectorAll(\`[data-level="\${level}"]\`).forEach(btn => btn.classList.remove('bg-purple-500', 'text-white'));
-                            this.classList.add('bg-purple-500', 'text-white');
-                            this.classList.remove('bg-gray-200', 'text-gray-800');
                         });
                     });
-
+                    
+                    // Mặc định sắp xếp theo Tên A-Z cho tất cả Levels khi load
+                    // levelData.forEach(level => {
+                    //     sortTopics(level.level, 'topic', 'asc');
+                    // });
                 });
              </script>
         `;
