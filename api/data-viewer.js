@@ -385,7 +385,7 @@ module.exports = async (req, res) => {
             { label: 'Instagram', value: 'hq.hnug', link: 'https://www.instagram.com/hq.hnug', iconClass: 'fi fi-brands-instagram' },
             { label: 'Discord', value: 'dsc.gg/thenoicez', link: 'https://dsc.gg/thenoicez', iconClass: 'fi fi-brands-discord' },
             { label: 'Email', value: 'hungnq.august.work@gmail.com', link: 'mailto:hungnq.august.work@gmail.com', iconClass: 'fi fi-tr-envelopes' },
-            { label: 'LinkedIn', value: 'hungnq-august', link: 'https://www.linkedin.com/in/hungnq-august/', iconClass: 'fi fi-brands-linkedin-circle' },
+            { label: 'LinkedIn', value: 'hungnq-august', link: 'https://www.linkedin.com/in/hungnq-august/', iconClass: 'fi fi-brands-linkedin' },
             { label: 'TikTok', value: 'nq.hnug', link: 'https://www.tiktok.com/@nq.hnug', iconClass: 'fi fi-brands-tik-tok' },
             { label: 'Phone', value: '0388205003 / 0923056036', link: 'tel:0388205003', iconClass: 'fi fi-rr-phone-call' },
             { label: 'Zalo', value: 'Hưng (0923056036)', link: 'https://zalo.me/0923056036', iconClass: 'fi fi-rr-comment' },
