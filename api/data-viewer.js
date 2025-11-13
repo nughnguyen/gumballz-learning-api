@@ -51,7 +51,6 @@ const formatUptime = (start) => {
 
 // Hàm lấy và phân tích dữ liệu CSV (Đã tích hợp thống kê và bỏ qua cache)
 async function getAndParseData(shouldBypassCache = false) { 
-    // Nếu không bypass cache và dữ liệu còn hạn, trả về cache
     if (!shouldBypassCache && cachedData && new Date().getTime() - cachedData.cacheTime < CACHE_DURATION) {
         return cachedData.data;
     }
@@ -68,7 +67,6 @@ async function getAndParseData(shouldBypassCache = false) {
 
         const filteredData = data.filter(row => row.word && row.level);
         
-        // Cập nhật thống kê
         updateCount++;
         lastUpdateTime = new Date();
         cachedData = { data: filteredData, cacheTime: new Date().getTime() };
@@ -77,7 +75,6 @@ async function getAndParseData(shouldBypassCache = false) {
 
     } catch (error) {
         console.error("Lỗi khi tải hoặc phân tích CSV:", error);
-        // Nếu lỗi nhưng có cache cũ, sử dụng cache cũ
         if (cachedData) return cachedData.data;
         throw new Error("Không thể tải hoặc xử lý dữ liệu nguồn.");
     }
@@ -85,34 +82,26 @@ async function getAndParseData(shouldBypassCache = false) {
 
 // Hàm chính của Serverless Function
 module.exports = async (req, res) => {
-    // 1. Tải và Cập nhật Thống kê
     let rawData = [];
     let loadError = null;
     
-    // Lấy tham số query "refresh" từ request
-    const url = new URL(`http://dummy.com${req.url}`); // Dùng dummy URL để parse req.url
+    const url = new URL(`http://dummy.com${req.url}`); 
     const shouldRefresh = url.searchParams.get('refresh') === 'true';
     
     try {
-        // Truyền tham số shouldRefresh vào hàm tải dữ liệu
         rawData = await getAndParseData(shouldRefresh);
     } catch (e) {
         loadError = e.message;
     }
     
-    const BASE_URL = `https://${req.headers.host}`;
-    
-    // 2. Xử lý logic hiển thị
-    
     const levelMap = rawData.reduce((acc, row) => {
         const level = row.level.toUpperCase().trim();
         if (!acc[level]) {
-            acc[level] = { level: level, word_count: 0, topicSet: new Set(), topics: {} }; // Thêm topics để lưu chi tiết
+            acc[level] = { level: level, word_count: 0, topicSet: new Set(), topics: {} };
         }
         acc[level].word_count += 1;
         acc[level].topicSet.add(row.topic);
         
-        // Thống kê từ vựng theo Topic trong Level đó
         if (row.topic) {
             const topicName = row.topic.trim();
             if (!acc[level].topics[topicName]) {
@@ -129,7 +118,8 @@ module.exports = async (req, res) => {
             level: item.level,
             word_count: item.word_count,
             topic_count: item.topicSet.size,
-            topic_details: Object.values(item.topics).sort((a, b) => a.topic.localeCompare(b.topic)) // Lưu chi tiết topics
+            // Lưu chi tiết topics dưới dạng mảng
+            topic_details: Object.values(item.topics).sort((a, b) => a.topic.localeCompare(b.topic))
         }))
         .sort((a, b) => a.level.localeCompare(b.level));
         
@@ -145,25 +135,21 @@ module.exports = async (req, res) => {
     if (levelsArray.length > 0) {
         testLevel = levelsArray[0].level;
         
-        // Giả lập logic Topics (Sử dụng dữ liệu cached thay vì gọi API)
         const currentLevel = levelsArray.find(item => item.level === testLevel);
         if (currentLevel) {
              topicsStatus = { success: true, message: "Thành công", data: currentLevel.topic_details };
         }
 
-
         if (topicsStatus.data.length > 0) {
               testTopic = topicsStatus.data[0].topic;
               
-              // Giả lập logic Lesson
               const filteredData = rawData.filter(row => 
                   row.level && row.level.toUpperCase().trim() === testLevel &&
                   row.topic && row.topic.trim() === testTopic
               );
-              lessonStatus = { success: true, message: "Thành công", data: filteredData.slice(0, 3) }; // Lấy 3 từ đầu
+              lessonStatus = { success: true, message: "Thành công", data: filteredData.slice(0, 3) };
         }
         
-        // Tính Global Stats
         const allTopics = new Set(rawData.map(r => `${r.level}|${r.topic}`));
         globalStats = {
             totalLevels: levelsArray.length,
@@ -173,7 +159,6 @@ module.exports = async (req, res) => {
         };
     }
 
-    // 3. Render HTML
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
 
@@ -182,9 +167,8 @@ module.exports = async (req, res) => {
         const stateClass = isSuccess ? 'bg-green-100 border-green-500' : 'bg-red-100 border-red-500';
         const stateColor = isSuccess ? 'text-green-700' : 'text-red-700';
 
-        const displayData = data ? data.slice(0, 3) : []; // Giới hạn hiển thị 3 item đầu tiên
+        const displayData = data ? data.slice(0, 3) : [];
         
-        // Logic hiển thị đặc biệt cho Endpoint 1
         let sampleDataHtml = '';
         let totalItemsDisplay = isSuccess ? data.length : 0;
         let totalItemsLabel = 'Tổng số mục';
@@ -243,6 +227,7 @@ module.exports = async (req, res) => {
 
     // Hàm render Cây Thư mục
     const renderTopicTree = (levels) => {
+        // Tạo HTML cho các nút Tabs
         const tabsHtml = levels.map((level, index) => `
             <button class="tab-button ${index === 0 ? 'bg-purple-600 text-white' : 'bg-white text-gray-700 border border-gray-300'} px-4 py-2 text-sm font-medium rounded-t-lg transition duration-150 ease-in-out hover:bg-purple-500 hover:text-white"
                     onclick="openLevel(event, '${level.level}')"
@@ -251,20 +236,37 @@ module.exports = async (req, res) => {
             </button>
         `).join('');
 
+        // Tạo HTML cho nội dung Tabs (Cây thư mục)
         const contentHtml = levels.map((level, index) => `
             <div id="${level.level}" class="tab-content p-4 bg-white rounded-b-lg rounded-tr-lg border border-t-0 border-gray-200 ${index === 0 ? 'block' : 'hidden'}">
-                <h4 class="text-lg font-bold text-gray-800 mb-3">Level: ${level.level} (Tổng ${level.word_count} từ)</h4>
-                <ul class="space-y-2">
+                <h4 class="text-lg font-bold text-gray-800 mb-3">Level: ${level.level} (Tổng ${level.word_count} từ, ${level.topic_count} chủ đề)</h4>
+                
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <span class="text-sm font-medium text-gray-500 mr-2">Sắp xếp:</span>
+                    <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="topic" data-direction="asc">Tên A-Z</button>
+                    <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="topic" data-direction="desc">Tên Z-A</button>
+                    <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="count" data-direction="desc">Từ (Nhiều > Ít)</button>
+                    <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="count" data-direction="asc">Từ (Ít > Nhiều)</button>
+                </div>
+
+                <div id="topic-list-${level.level}" class="space-y-2">
                     ${level.topic_details.map(topic => `
-                        <li class="flex justify-between items-center bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition duration-150">
-                            <span class="text-gray-700 font-medium">Chủ đề: ${topic.topic}</span>
-                            <span class="text-sm font-bold text-purple-600">${topic.word_count} từ</span>
-                        </li>
+                        <div class="topic-item bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition duration-150" data-topic-name="${topic.topic}" data-word-count="${topic.word_count}">
+                            <div class="flex justify-between items-center cursor-pointer collapsible-header" onclick="toggleCollapse(this)">
+                                <span class="text-gray-700 font-medium">Chủ đề: ${topic.topic}</span>
+                                <span class="text-sm font-bold text-purple-600">${topic.word_count} từ <span class="collapse-icon">▼</span></span>
+                            </div>
+                            <div class="collapsible-content text-xs text-gray-500 mt-2 p-2 bg-white border border-gray-200 rounded hidden">
+                                <p>Thông tin chi tiết về các từ vựng trong chủ đề này sẽ được load qua API.</p>
+                                <p>Endpoint: <code>/api/lesson/${level.level}/${encodeURIComponent(topic.topic)}</code></p>
+                            </div>
+                        </div>
                     `).join('')}
-                </ul>
+                </div>
             </div>
         `).join('');
 
+        // HTML và JS cho Tabs, Sort và Collapse
         return `
             <div class="mb-8">
                 <h2 class="text-2xl font-bold text-gray-800 mb-4">Cấu trúc Dữ liệu Chi tiết (Cây Levels & Topics)</h2>
@@ -275,7 +277,10 @@ module.exports = async (req, res) => {
                     ${contentHtml}
                 </div>
             </div>
-             <script>
+            <script>
+                // Dữ liệu Levels và Topics được truyền vào JS để xử lý sắp xếp
+                const levelData = ${JSON.stringify(levelsArray)};
+
                 function openLevel(evt, levelName) {
                     var i, tabcontent, tablinks;
                     tabcontent = document.getElementsByClassName("tab-content");
@@ -292,17 +297,122 @@ module.exports = async (req, res) => {
                     evt.currentTarget.classList.add("bg-purple-600", "text-white");
                 }
                 
-                // Mặc định mở tab đầu tiên khi tải
+                function toggleCollapse(header) {
+                    const content = header.nextElementSibling;
+                    const icon = header.querySelector('.collapse-icon');
+                    if (content.classList.contains('hidden')) {
+                        content.classList.remove('hidden');
+                        icon.textContent = '▲';
+                    } else {
+                        content.classList.add('hidden');
+                        icon.textContent = '▼';
+                    }
+                }
+
+                function sortTopics(levelName, sortBy, direction) {
+                    const topicListElement = document.getElementById('topic-list-' + levelName);
+                    const topicItems = Array.from(topicListElement.querySelectorAll('.topic-item'));
+
+                    topicItems.sort((a, b) => {
+                        let valA, valB;
+
+                        if (sortBy === 'topic') {
+                            valA = a.getAttribute('data-topic-name').toLowerCase();
+                            valB = b.getAttribute('data-topic-name').toLowerCase();
+                            if (direction === 'asc') return valA.localeCompare(valB);
+                            return valB.localeCompare(valA);
+                        } else if (sortBy === 'count') {
+                            valA = parseInt(a.getAttribute('data-word-count'));
+                            valB = parseInt(b.getAttribute('data-word-count'));
+                            if (direction === 'asc') return valA - valB;
+                            return valB - valA;
+                        }
+                        return 0;
+                    });
+
+                    // Xóa và chèn lại các mục đã sắp xếp
+                    topicItems.forEach(item => topicListElement.appendChild(item));
+                }
+
                 document.addEventListener('DOMContentLoaded', () => {
                     const firstTab = document.querySelector('.tab-button');
                     if(firstTab) {
                         firstTab.click();
                     }
+                    
+                    document.querySelectorAll('.sort-button').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const level = this.getAttribute('data-level');
+                            const sortBy = this.getAttribute('data-sort-by');
+                            const direction = this.getAttribute('data-direction');
+                            sortTopics(level, sortBy, direction);
+                            
+                            // Đổi màu nút đang active
+                            document.querySelectorAll(\`[data-level="\${level}"]\`).forEach(btn => btn.classList.remove('bg-purple-500', 'text-white'));
+                            this.classList.add('bg-purple-500', 'text-white');
+                            this.classList.remove('bg-gray-200', 'text-gray-800');
+                        });
+                    });
+
                 });
              </script>
         `;
     };
 
+    // Hàm render Footer
+    const renderFooter = () => {
+        const contactInfo = [
+            { label: 'Facebook', value: 'hungnq188.2k5', link: 'https://www.facebook.com/hungnq188.2k5', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z' },
+            { label: 'YouTube', value: '@nughnguyen', link: 'https://www.youtube.com/@nughnguyen', icon: 'M19.615 3.184c-3.197-.73-9.458-.73-12.656 0C3.12 3.864 1 6.848 1 12s2.12 8.136 5.959 8.816c3.198.73 9.457.73 12.656 0 3.84-1.28 5.959-4.264 5.959-8.816s-2.12-8.136-5.959-8.816zM10 15v-6l5 3-5 3z' },
+            { label: 'Instagram', value: 'hq.hnug', link: 'https://www.instagram.com/hq.hnug', icon: 'M15 12c0 1.657-1.343 3-3 3s-3-1.343-3-3 1.343-3 3-3 3 1.343 3 3z' },
+            { label: 'Discord', value: 'dsc.gg/thenoicez', link: 'https://dsc.gg/thenoicez', icon: 'M18.85 2.19c-2.32-.96-4.66-1.55-7.07-1.55-2.4 0-4.75.59-7.07 1.55-2.42 1.01-4.22 3.1-4.59 5.86-.54 8.01 4.5 13.79 4.5 13.79s2.47 1.62 5.66 1.62c3.19 0 5.66-1.62 5.66-1.62s5.04-5.78 4.5-13.79c-.37-2.76-2.17-4.85-4.59-5.86zM9 16c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zM15 16c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z' },
+            { label: 'Email', value: 'hungnq.august.work@gmail.com', link: 'mailto:hungnq.august.work@gmail.com', icon: 'M3 8l7.89 5.26c.38.25.79.37 1.2.37.41 0 .82-.12 1.2-.37L21 8m-2 10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h14a2 2 0 012 2v10z' },
+            { label: 'LinkedIn', value: 'hungnq-august', link: 'https://www.linkedin.com/in/hungnq-august/', icon: 'M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14zM8 17V9h3v8H8zM7 7.25A1.25 1.25 0 005.75 6a1.25 1.25 0 00-1.25 1.25 1.25 1.25 0 001.25 1.25 1.25 1.25 0 001.25-1.25z' },
+            { label: 'TikTok', value: 'nq.hnug', link: 'https://www.tiktok.com/@nq.hnug', icon: 'M20 17.5a.5.5 0 01-.5.5H16V14h3v3.5a.5.5 0 01-.5.5z' },
+            { label: 'Phone', value: '0388205003 / 0923056036', link: 'tel:0388205003', icon: 'M3 5a1 1 0 011-1h3a1 1 0 01.993.883l.1 1.766A1 1 0 017.02 8.01l-1.04-.4a.5.5 0 00-.5.127 8.003 8.003 0 005.748 5.748.5.5 0 00.127-.501l-.4-1.04a1 1 0 011.028-1.07l1.766.1a1 1 0 01.883.993v3a1 1 0 01-1 1H4a1 1 0 01-1-1V5z' },
+            { label: 'Zalo', value: 'Hưng (0923056036)', link: 'https://zalo.me/0923056036', icon: 'M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm1.2 13h-2.4c-.662 0-1.2-.538-1.2-1.2V9.2c0-.662.538-1.2 1.2-1.2h2.4c.662 0 1.2.538 1.2 1.2v4.6c0 .662-.538 1.2-1.2 1.2z' },
+            { label: 'Website', value: 'guns.lol/nguyenquochung', link: 'https://guns.lol/nguyenquochung', icon: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z' }
+        ];
+
+        return `
+            <footer class="mt-16 pt-8 pb-4 bg-gray-900 text-white border-t-4 border-purple-600">
+                <div class="container mx-auto px-4 sm:px-8">
+                    <div class="text-center mb-6">
+                        <span class="text-xs text-gray-400 block mb-2">Developed & Maintained by</span>
+                        <div class="inline-block text-2xl font-extrabold tracking-wider text-white">
+                            <span class="quoc-hung-text">Quoc Hung</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-6 text-sm">
+                        ${contactInfo.map(item => `
+                            <div class="flex items-start space-x-2">
+                                <svg class="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${item.icon}"></path></svg>
+                                <div>
+                                    <p class="font-semibold text-gray-300">${item.label}</p>
+                                    <a href="${item.link}" target="_blank" class="text-xs text-gray-400 hover:text-purple-300 transition duration-150 break-all">${item.value}</a>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <p class="text-center text-xs text-gray-500 mt-8 pt-4 border-t border-gray-700">
+                        &copy; ${new Date().getFullYear()} Quoc Hung. All rights reserved.
+                    </p>
+                </div>
+                <style>
+                    @keyframes neonPulse {
+                        0%, 100% { color: #f3e8ff; text-shadow: 0 0 5px #9333ea, 0 0 10px #9333ea; }
+                        50% { color: #ffffff; text-shadow: 0 0 10px #a78bfa, 0 0 20px #8b5cf6; }
+                    }
+                    .quoc-hung-text {
+                        animation: neonPulse 2s ease-in-out infinite;
+                        text-transform: uppercase;
+                    }
+                </style>
+            </footer>
+        `;
+    }
 
     const htmlContent = `
         <!DOCTYPE html>
@@ -310,7 +420,7 @@ module.exports = async (req, res) => {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Gumballz API Dashboard</title>
+            <title>Gumballz API Dashboard | Quoc Hung</title>
             <script src="https://cdn.tailwindcss.com"></script>
             <style>
                 body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; }
@@ -345,7 +455,6 @@ module.exports = async (req, res) => {
                         button.disabled = true;
                         button.innerHTML = '<svg class="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m15.356 2H15m-3-4v5h.582m-.582 0l-1.356-1.356m1.356 1.356L15 8.644m-3 3l-1.356 1.356m1.356-1.356l1.356-1.356M4 13a8.001 8.001 0 0015.356 2"></path></svg> Đang tải...';
                         
-                        // Lấy URL hiện tại và thêm/thay thế tham số refresh=true
                         const currentUrl = new URL(window.location.href);
                         currentUrl.searchParams.set('refresh', 'true');
                         
@@ -390,8 +499,6 @@ module.exports = async (req, res) => {
                     </div>
                 </div>
 
-                ${renderTopicTree(levelsArray)}
-
                 <h2 class="text-2xl font-bold text-gray-800 mb-4">Kiểm tra Endpoints (Kiểm tra API tự động)</h2>
                 
                 ${renderDataBox(
@@ -415,10 +522,10 @@ module.exports = async (req, res) => {
                     `/api/lesson/${testLevel || 'N/A'}/${encodeURIComponent(testTopic || 'N/A')}`
                 )}
 
-                <footer class="text-center mt-10 text-sm text-gray-500">
-                    Sử dụng Serverless Function trên Vercel để đồng bộ dữ liệu từ Google Sheet CSV.
-                </footer>
+                ${renderTopicTree(levelsArray)}
+
             </div>
+            ${renderFooter()}
         </body>
         </html>
     `;
