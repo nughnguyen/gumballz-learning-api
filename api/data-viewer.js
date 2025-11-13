@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 const csv = require('csvtojson');
 
-// ⭐ Cập nhật URL Google Sheet CSV
+// URL Google Sheet CSV của bạn
 const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTy8CweGTUMVlovuY8BwSwcjKKCHxKC7VGIGNnQ_Yuj6kxSg3R5h4kIifd_ZFRzdlK5aVzS3q4608v5/pub?gid=0&single=true&output=csv";
 
 // === THỐNG KÊ TOÀN CỤC (SỐNG TRONG THỜI GIAN INSTANCE WARM) ===
@@ -275,13 +275,13 @@ module.exports = async (req, res) => {
             <script>
                 let activeLevel = null; // Biến theo dõi Level đang mở
 
-                // ⭐ CẬP NHẬT LOGIC TOGGLE TAB
+                // ⭐ LOGIC TOGGLE TAB
                 function toggleLevelTab(evt, levelName) {
                     const targetContent = document.getElementById('level-content-' + levelName);
                     const targetButton = evt.currentTarget;
                     
-                    if (levelName === activeLevel) {
-                        // Nếu nhấn vào Level đang mở: Thu gọn (Collapse)
+                    // Nếu nhấn vào Level đang mở: Thu gọn (Collapse)
+                    if (levelName === activeLevel && targetContent.style.display !== "none") {
                         targetContent.style.display = "none";
                         targetButton.classList.remove("border-purple-600", "text-purple-600");
                         targetButton.classList.add("border-transparent", "text-gray-500", "hover:text-purple-600", "hover:border-purple-300");
@@ -369,7 +369,6 @@ module.exports = async (req, res) => {
                     // Mặc định mở Level đầu tiên khi tải
                     const firstTab = document.querySelector('.level-tab-button');
                     if(firstTab) {
-                        // Kích hoạt thủ công thay vì click() để gán activeLevel đúng
                         toggleLevelTab({currentTarget: firstTab}, firstTab.getAttribute('data-level'));
                     }
                 });
@@ -377,9 +376,9 @@ module.exports = async (req, res) => {
         `;
     };
 
-    // Hàm render Footer (Sử dụng HTML/CSS Classes cho Icon)
+    // Hàm render Footer (Sử dụng HTML/CSS Classes và thêm Glow)
     const renderFooter = () => {
-        // ⭐ CẬP NHẬT ICON SANG HTML/CSS CLASS
+        // ⭐ ICON CLASSES SỬ DỤNG CHO FOOTER
         const contactInfo = [
             { label: 'Facebook', value: 'hungnq188.2k5', link: 'https://www.facebook.com/hungnq188.2k5', iconClass: 'fi fi-brands-facebook' },
             { label: 'YouTube', value: '@nughnguyen', link: 'https://www.youtube.com/@nughnguyen', iconClass: 'fi fi-brands-youtube' }, 
@@ -394,7 +393,7 @@ module.exports = async (req, res) => {
         ];
 
         return `
-            <footer class="mt-16 pt-8 pb-4 bg-gray-900 text-white border-t-4 border-purple-600">
+            <footer class="mt-16 pt-8 pb-4 bg-gray-900 text-white border-t-4 border-purple-600 footer-glow">
                 <div class="container mx-auto px-4 sm:px-8">
                     <div class="text-center mb-6 relative">
                         <span class="text-xs text-gray-400 block mb-2">Developed & Maintained by</span>
@@ -411,7 +410,7 @@ module.exports = async (req, res) => {
                     <div class="grid grid-cols-2 md:grid-cols-5 gap-6 text-sm">
                         ${contactInfo.map(item => `
                             <div class="flex items-start space-x-2">
-                                <i class="${item.iconClass} w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5"></i>
+                                <i class="${item.iconClass} w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5 footer-icon-glow"></i>
                                 <div>
                                     <p class="font-semibold text-gray-300">${item.label}</p>
                                     <a href="${item.link}" target="_blank" class="text-xs text-gray-400 hover:text-purple-300 transition duration-150 break-all">${item.value}</a>
@@ -425,6 +424,15 @@ module.exports = async (req, res) => {
                     </p>
                 </div>
                 <style>
+                    /* ⭐ CSS CẬP NHẬT: THÊM GLOW CHO ICON VÀ CHỮ */
+                    .footer-icon-glow {
+                        filter: drop-shadow(0 0 2px #c084fc); /* Màu tím nhạt cho icon */
+                        transition: filter 0.3s ease;
+                    }
+                    .footer-icon-glow:hover {
+                        filter: drop-shadow(0 0 4px #e879f9) drop-shadow(0 0 8px #c084fc); /* Glow mạnh hơn khi hover */
+                    }
+                    
                     /* Animation cho chữ Nguyen Quoc Hung */
                     @keyframes textBlink {
                         0%, 100% { color: #f3e8ff; text-shadow: 0 0 5px #9333ea, 0 0 10px #9333ea; }
@@ -468,6 +476,7 @@ module.exports = async (req, res) => {
                         height: 100%;
                         background-color: inherit;
                         border-radius: 50%;
+                        
                     }
                     .heart-bubble::before {
                         top: -50%;
@@ -522,9 +531,7 @@ module.exports = async (req, res) => {
                     /* ⭐ IMPORT CSS CỦA Flag Icons */
                     @import url('https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css');
                     @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
-                    /* Lưu ý: Để các class fi-brands hoạt động, bạn cần đảm bảo CSS của thư viện Flags/FontAwesome Pro được load. 
-                       Vì Vercel Serverless Function không thể load CSS động, tôi thêm 2 thư viện phổ biến để tăng khả năng hiển thị. 
-                       Nếu vẫn không hiển thị, bạn cần import CSS chính xác cho bộ "fi" icons của bạn.*/
+                    /* Chú ý: Bạn cần thay thế các URL trên bằng URL CSS chính xác của thư viện icon "fi" nếu cần. */
                 </style>
             </footer>
         `;
@@ -549,7 +556,9 @@ module.exports = async (req, res) => {
                 }
                 .animate-spin { animation: spin 1s linear infinite; }
             </style>
-        </head>
+             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css">
+             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+             </head>
         <body>
             <div class="container mx-auto p-4 sm:p-8">
                 <header class="mb-8">
