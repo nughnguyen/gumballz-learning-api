@@ -9,36 +9,32 @@ let cachedData = null;
 let updateCount = 0;
 let lastUpdateTime = 'Chưa cập nhật';
 
-// Khởi tạo thời gian bắt đầu Serverless Instance
-const serverStartTime = new Date(); 
+// ✅ ĐÃ THAY ĐỔI: Đặt thời gian khởi động cố định (12:00 trưa 13/11/2025 GMT+7)
+// Tương đương với 2025-11-13T05:00:00.000Z
+const serverStartTime = new Date('2025-11-13T05:00:00.000Z');
 
 const CACHE_DURATION = 3600 * 1000; // 1 giờ
 
-// Hàm format thời gian (Giờ Việt Nam)
+// Hàm format thời gian
 const formatTime = (date) => {
-    if (date === 'Chưa cập nhật' || !date) return date;
-    
-    try {
-         // Sử dụng 'Asia/Ho_Chi_Minh' để hiển thị thời gian chính xác theo giờ Việt Nam
-         return new Date(date).toLocaleString('vi-VN', {
-            timeZone: 'Asia/Ho_Chi_Minh',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false,
-        });
-    } catch (e) {
-        return date.toString();
-    }
+    if (date === 'Chưa cập nhật') return date;
+    // Sử dụng 'Asia/Ho_Chi_Minh' để hiển thị thời gian chính xác theo giờ Việt Nam
+    return new Date(date).toLocaleString('vi-VN', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+    });
 };
 
 // Hàm tính Uptime
 const formatUptime = (start) => {
     const diff = new Date().getTime() - start.getTime();
-    if (diff < 0) return "Đang khởi động"; 
+    if (diff < 0) return "Đã đặt giờ trong tương lai"; 
     
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -56,7 +52,6 @@ const formatUptime = (start) => {
 
 // Hàm lấy và phân tích dữ liệu CSV (Đã tích hợp thống kê)
 async function getAndParseData() {
-    // Kiểm tra cache
     if (cachedData && new Date().getTime() - cachedData.cacheTime < CACHE_DURATION) {
         return cachedData.data;
     }
@@ -65,7 +60,6 @@ async function getAndParseData() {
         const response = await fetch(GOOGLE_SHEET_CSV_URL);
         const csvText = await response.text();
         
-        // Phân tích cú pháp CSV
         const data = await csv({
             noheader: false,
             headers: ['level', 'topic', 'word', 'wordType', 'phonetic', 'mean', 'definition_vi', 'definition_us', 'example', 'synonym', 'antonym'],
@@ -100,7 +94,10 @@ module.exports = async (req, res) => {
         loadError = e.message;
     }
     
-    // 2. Xử lý logic tính toán
+    const BASE_URL = `https://${req.headers.host}`;
+    
+    // 2. Xử lý logic hiển thị
+    
     const levelMap = rawData.reduce((acc, row) => {
         const level = row.level.toUpperCase().trim();
         if (!acc[level]) {
@@ -161,10 +158,6 @@ module.exports = async (req, res) => {
             levelStats: levelsArray
         };
     }
-    
-    // Tính toán thời gian Cache hết hạn
-    const cacheExpirationTime = cachedData ? new Date(cachedData.cacheTime + CACHE_DURATION) : null;
-
 
     // 3. Render HTML
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -227,18 +220,15 @@ module.exports = async (req, res) => {
 
                 <!-- Thống kê Server -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    
-                    <!-- Ô MỚI: Trạng thái Cache -->
                     <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-blue-500">
-                        <p class="text-sm font-medium text-gray-500">Cache hết hạn sau</p>
-                        <p class="text-2xl font-bold text-gray-800 mt-1">${cacheExpirationTime ? formatTime(cacheExpirationTime) : 'N/A'}</p>
-                        <p class="text-sm text-gray-500 mt-1">Dữ liệu sẽ được tải lại sau thời điểm này.</p>
+                        <p class="text-sm font-medium text-gray-500">Thời gian khởi động cố định</p>
+                        <p class="text-2xl font-bold text-gray-800 mt-1">${formatTime(serverStartTime)}</p>
+                        <p class="text-sm text-gray-500 mt-1">Giờ Việt Nam (GMT+7).</p>
                     </div>
-                    
                     <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-yellow-500">
                         <p class="text-sm font-medium text-gray-500">Thời gian hoạt động (Uptime)</p>
                         <p class="text-2xl font-bold text-gray-800 mt-1">${formatUptime(serverStartTime)}</p>
-                        <p class="text-sm text-gray-500 mt-1">Tính từ khi instance Vercel khởi động.</p>
+                        <p class="text-sm text-gray-500 mt-1">Tính từ mốc 12h ngày 13/11/2025.</p>
                     </div>
                     <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-purple-500">
                         <p class="text-sm font-medium text-gray-500">Cập nhật gần nhất</p>
