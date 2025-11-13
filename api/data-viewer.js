@@ -223,36 +223,37 @@ module.exports = async (req, res) => {
         `;
     };
 
-    // Hàm render Cây Thư mục
+    // Hàm render Cây Thư mục (Dạng Tab ngang)
     const renderTopicTree = (levels) => {
-        const contentHtml = levels.map((level, index) => `
-            <div class="level-container bg-white rounded-xl shadow-lg mb-4">
-                <div class="level-header p-4 cursor-pointer bg-purple-100 hover:bg-purple-200 rounded-t-xl" 
-                     onclick="toggleLevelCollapse(this, '${level.level}')" 
-                     data-level="${level.level}">
-                    <h4 class="text-lg font-bold text-purple-800 flex justify-between items-center">
-                        Level: ${level.level} (Tổng ${level.word_count} từ, ${level.topic_count} chủ đề)
-                        <span class="collapse-icon text-xl transition-transform duration-300 transform rotate-0">▼</span>
-                    </h4>
-                </div>
-                
-                <div id="level-content-${level.level}" class="level-content-area p-4 hidden">
-                    <div class="flex flex-wrap gap-2 mb-4">
-                        <span class="text-sm font-medium text-gray-500 mr-2">Sắp xếp:</span>
-                        <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="topic" data-direction="asc">Tên A-Z</button>
-                        <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="topic" data-direction="desc">Tên Z-A</button>
-                        <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="count" data-direction="desc">Từ (Nhiều > Ít)</button>
-                        <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="count" data-direction="asc">Từ (Ít > Nhiều)</button>
-                    </div>
+        // Tạo HTML cho các nút Levels (Tabs)
+        const tabsHtml = levels.map((level, index) => `
+            <button class="level-tab-button text-sm font-medium px-4 py-2 border-b-2 transition duration-300 ${index === 0 ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-500 hover:text-purple-600 hover:border-purple-300'}"
+                    onclick="openLevel(event, '${level.level}')"
+                    id="tab-${level.level}">
+                ${level.level} (${level.word_count} từ)
+            </button>
+        `).join('');
 
-                    <div id="topic-list-${level.level}" class="space-y-2">
-                        ${level.topic_details.map(topic => `
-                            <div class="topic-item bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition duration-150 flex justify-between items-center" data-topic-name="${topic.topic}" data-word-count="${topic.word_count}">
-                                <span class="text-gray-700 font-medium">Chủ đề: ${topic.topic}</span>
-                                <span class="text-sm font-bold text-purple-600">${topic.word_count} từ</span>
-                            </div>
-                        `).join('')}
-                    </div>
+        // Tạo HTML cho nội dung Tabs
+        const contentHtml = levels.map((level, index) => `
+            <div id="level-content-${level.level}" class="level-tab-content p-4 bg-white shadow-lg rounded-b-xl rounded-r-xl border border-t-0 border-gray-200 ${index === 0 ? 'block' : 'hidden'}">
+                <h4 class="text-lg font-bold text-gray-800 mb-3">Level: ${level.level} (Tổng ${level.word_count} từ, ${level.topic_count} chủ đề)</h4>
+                
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <span class="text-sm font-medium text-gray-500 mr-2">Sắp xếp:</span>
+                    <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="topic" data-direction="asc">Tên A-Z</button>
+                    <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="topic" data-direction="desc">Tên Z-A</button>
+                    <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="count" data-direction="desc">Từ (Nhiều > Ít)</button>
+                    <button class="sort-button text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded" data-level="${level.level}" data-sort-by="count" data-direction="asc">Từ (Ít > Nhiều)</button>
+                </div>
+
+                <div id="topic-list-${level.level}" class="space-y-2">
+                    ${level.topic_details.map(topic => `
+                        <div class="topic-item bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition duration-150 flex justify-between items-center" data-topic-name="${topic.topic}" data-word-count="${topic.word_count}">
+                            <span class="text-gray-700 font-medium">Chủ đề: ${topic.topic}</span>
+                            <span class="text-sm font-bold text-purple-600">${topic.word_count} từ</span>
+                        </div>
+                    `).join('')}
                 </div>
             </div>
         `).join('');
@@ -260,29 +261,45 @@ module.exports = async (req, res) => {
         return `
             <div class="mt-8 mb-8">
                 <h2 class="text-2xl font-bold text-gray-800 mb-4">Cấu trúc Dữ liệu Chi tiết (Cây Levels & Topics)</h2>
-                <div id="levels-tree">
+                
+                <div class="flex flex-wrap border-b border-gray-200 -mb-px">
+                    ${tabsHtml}
+                </div>
+
+                <div class="levels-content-wrapper">
                     ${contentHtml}
                 </div>
             </div>
             <script>
-                // Hàm thu gọn/mở rộng Level
-                function toggleLevelCollapse(header, levelName) {
-                    const content = document.getElementById('level-content-' + levelName);
-                    const icon = header.querySelector('.collapse-icon');
-                    const levelContainer = header.closest('.level-container');
+                // Hàm chuyển đổi Level Tab
+                function openLevel(evt, levelName) {
+                    var i, tabcontent, tablinks;
                     
-                    if (content.classList.contains('hidden')) {
-                        // Mở rộng
-                        content.classList.remove('hidden');
-                        icon.classList.remove('rotate-0');
-                        icon.classList.add('rotate-180');
-                        levelContainer.classList.add('rounded-b-none');
-                    } else {
-                        // Thu gọn
-                        content.classList.add('hidden');
-                        icon.classList.remove('rotate-180');
-                        icon.classList.add('rotate-0');
-                        levelContainer.classList.remove('rounded-b-none');
+                    // Ẩn tất cả nội dung tab
+                    tabcontent = document.getElementsByClassName("level-tab-content");
+                    for (i = 0; i < tabcontent.length; i++) {
+                        tabcontent[i].style.display = "none";
+                    }
+                    
+                    // Xóa trạng thái active của tất cả nút tab
+                    tablinks = document.getElementsByClassName("level-tab-button");
+                    for (i = 0; i < tablinks.length; i++) {
+                        tablinks[i].classList.remove("border-purple-600", "text-purple-600");
+                        tablinks[i].classList.add("border-transparent", "text-gray-500", "hover:text-purple-600", "hover:border-purple-300");
+                    }
+                    
+                    // Hiển thị nội dung tab hiện tại và đánh dấu nút tab active
+                    document.getElementById('level-content-' + levelName).style.display = "block";
+                    evt.currentTarget.classList.remove("border-transparent", "text-gray-500", "hover:text-purple-600", "hover:border-purple-300");
+                    evt.currentTarget.classList.add("border-purple-600", "text-purple-600");
+                    
+                    // Tự động sắp xếp lại lần đầu (tên A-Z) khi mở tab mới (nếu chưa có sắp xếp)
+                    const activeSortButton = document.querySelector(\`#level-content-\${levelName} .sort-button.bg-purple-500\`);
+                    if (!activeSortButton) {
+                        const defaultSortButton = document.querySelector(\`#level-content-\${levelName} .sort-button[data-sort-by="topic"][data-direction="asc"]\`);
+                        if (defaultSortButton) {
+                             defaultSortButton.click();
+                        }
                     }
                 }
 
@@ -309,12 +326,12 @@ module.exports = async (req, res) => {
 
                     topicItems.forEach(item => topicListElement.appendChild(item));
                     
-                    document.querySelectorAll(\`[data-level="\${levelName}"].sort-button\`).forEach(btn => {
+                    document.querySelectorAll(\`#level-content-\${levelName} .sort-button\`).forEach(btn => {
                         btn.classList.remove('bg-purple-500', 'text-white');
                         btn.classList.add('bg-gray-200', 'text-gray-800');
                     });
                     
-                    const activeBtn = document.querySelector(\`[data-level="\${levelName}"][data-sort-by="\${sortBy}"][data-direction="\${direction}"]\`);
+                    const activeBtn = document.querySelector(\`#level-content-\${levelName} .sort-button[data-sort-by="\${sortBy}"][data-direction="\${direction}"]\`);
                     if(activeBtn) {
                         activeBtn.classList.remove('bg-gray-200', 'text-gray-800');
                         activeBtn.classList.add('bg-purple-500', 'text-white');
@@ -322,14 +339,21 @@ module.exports = async (req, res) => {
                 }
 
                 document.addEventListener('DOMContentLoaded', () => {
+                    // Gán sự kiện cho các nút sắp xếp
                     document.querySelectorAll('.sort-button').forEach(button => {
                         button.addEventListener('click', function() {
-                            const level = this.getAttribute('data-level');
+                            const level = this.closest('.level-tab-content').id.replace('level-content-', '');
                             const sortBy = this.getAttribute('data-sort-by');
                             const direction = this.getAttribute('data-direction');
                             sortTopics(level, sortBy, direction);
                         });
                     });
+                    
+                    // Mặc định mở Level đầu tiên khi tải
+                    const firstTab = document.querySelector('.level-tab-button');
+                    if(firstTab) {
+                        firstTab.click();
+                    }
                 });
              </script>
         `;
@@ -338,25 +362,19 @@ module.exports = async (req, res) => {
     // Hàm render Footer (Đã đổi tên và cập nhật ICON)
     const renderFooter = () => {
         const contactInfo = [
-            // Icon cho Social Media thường là các biểu tượng đơn giản (M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z)
             { label: 'Facebook', value: 'hungnq188.2k5', link: 'https://www.facebook.com/hungnq188.2k5', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z' },
-            // Icon cho YouTube
             { label: 'YouTube', value: '@nughnguyen', link: 'https://www.youtube.com/@nughnguyen', icon: 'M10 15V9l5 3-5 3zM22 12c0-1.72-.1-3.41-.35-5.02a2.38 2.38 0 00-1.63-1.63C18.41 5 12 5 12 5s-6.41 0-8.02.35a2.38 2.38 0 00-1.63 1.63C2 8.59 2 12 2 12s0 3.41.35 5.02a2.38 2.38 0 001.63 1.63C5.59 19 12 19 12 19s6.41 0 8.02-.35a2.38 2.38 0 001.63-1.63C22 15.41 22 12 22 12z' }, 
-            // Icon cho Instagram
             { label: 'Instagram', value: 'hq.hnug', link: 'https://www.instagram.com/hq.hnug', icon: 'M16 3H8a5 5 0 00-5 5v8a5 5 0 005 5h8a5 5 0 005-5V8a5 5 0 00-5-5zM12 17a5 5 0 110-10 5 5 0 010 10zM17.5 6.5h.01' },
-            // Icon cho Discord (sử dụng icon chat đơn giản)
-            { label: 'Discord', value: 'dsc.gg/thenoicez', link: 'https://dsc.gg/thenoicez', icon: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z' },
-            // Icon cho Email
+            // ICON MỚI: Discord (Headset)
+            { label: 'Discord', value: 'dsc.gg/thenoicez', link: 'https://dsc.gg/thenoicez', icon: 'M3 18v-6a9 9 0 0118 0v6M21 19a2 2 0 01-2 2H5a2 2 0 01-2-2v-1h18v1z' },
             { label: 'Email', value: 'hungnq.august.work@gmail.com', link: 'mailto:hungnq.august.work@gmail.com', icon: 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM20 6l-8 5-8-5' },
-            // Icon cho LinkedIn
-            { label: 'LinkedIn', value: 'hungnq-august', link: 'https://www.linkedin.com/in/hungnq-august/', icon: 'M16 8a6 6 0 00-6 6v7h-4v-7a6 6 0 006-6v0h0zM5 8h4v13H5zM12 4a2 2 0 11-4 0 2 2 0 014 0z' },
-            // Icon cho TikTok (sử dụng icon camera đơn giản)
-            { label: 'TikTok', value: 'nq.hnug', link: 'https://www.tiktok.com/@nq.hnug', icon: 'M23 7l-8.79 5.86-5.86-8.79-1.47 1.47 8.79 5.86 5.86 8.79-1.47 1.47 5.86-8.79z' },
-            // Icon cho Phone
+            // ICON MỚI: LinkedIn (Briefcase)
+            { label: 'LinkedIn', value: 'hungnq-august', link: 'https://www.linkedin.com/in/hungnq-august/', icon: 'M16 20V4H8v16M2 6h20M10 9v3M14 9v3' },
+            // ICON MỚI: TikTok (Monitor)
+            { label: 'TikTok', value: 'nq.hnug', link: 'https://www.tiktok.com/@nq.hnug', icon: 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM10 14h4M12 10v4M8 18h8' },
             { label: 'Phone', value: '0388205003 / 0923056036', link: 'tel:0388205003', icon: 'M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.63A2 2 0 014.08 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z' },
-            // Icon cho Zalo (sử dụng icon chat đơn giản)
-            { label: 'Zalo', value: 'Hưng (0923056036)', link: 'https://zalo.me/0923056036', icon: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z' },
-            // Icon cho Website (sử dụng icon globe)
+            // ICON MỚI: Zalo (Message/Contact)
+            { label: 'Zalo', value: 'Hưng (0923056036)', link: 'https://zalo.me/0923056036', icon: 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM8 12h8M8 8h8M8 16h4' },
             { label: 'Website', value: 'guns.lol/nguyenquochung', link: 'https://guns.lol/nguyenquochung', icon: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' }
         ];
 
@@ -435,18 +453,20 @@ module.exports = async (req, res) => {
                         height: 100%;
                         background-color: inherit;
                         border-radius: 50%;
+                        
                     }
-
+                    /* Tùy chỉnh vị trí để tạo hình trái tim */
                     .heart-bubble::before {
                         top: -50%;
                         left: 0;
+                        transform: rotate(-45deg);
                     }
-
                     .heart-bubble::after {
                         top: 0;
                         left: 50%;
-                        transform: translateX(-50%) rotate(90deg);
+                        transform: translateX(-50%) rotate(45deg);
                     }
+
 
                     /* Animation cho bong bóng nổ */
                     @keyframes heartPop {
