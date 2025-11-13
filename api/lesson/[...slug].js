@@ -1,11 +1,11 @@
-// api/lesson/[...slug].js
+// api/lesson/[...slug].js (Phiên bản đã được sửa đổi và tăng cường)
 const fetch = require('node-fetch');
 const csv = require('csvtojson');
 
 // URL Google Sheet CSV của bạn
 const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTy8CweGTUMVlovuY8BwSwcjKKCHxKC7VGIGNnQ_Yuj6kxSg3R5h4kIifd_ZFRzdlK5aVzS3q4608v5/pub?gid=0&single=true&output=csv";
 
-// Khai báo Cache toàn cục (Tái sử dụng)
+// Khai báo Cache toàn cục
 let cachedData = null;
 let cacheTime = 0;
 const CACHE_DURATION = 3600 * 1000; // 1 giờ
@@ -43,31 +43,50 @@ module.exports = async (req, res) => {
         return;
     }
     
-    let slug = req.query.slug; 
-    
-    // Đảm bảo slug là một mảng: xử lý trường hợp Vercel trả về chuỗi đơn ("A1/Animals")
-    if (!Array.isArray(slug)) {
-        slug = (typeof slug === 'string' && slug.length > 0) ? slug.split('/') : [];
-    }
-    
-    // Kiểm tra tính hợp lệ cơ bản
-    if (slug.length < 2) {
-        return res.status(400).json({ success: false, message: "Thiếu Level và Topic trong đường dẫn (/api/lesson/[LEVEL]/[TOPIC])." });
-    }
-    
-    // Lấy Level
-    const requestedLevel = slug[0].toUpperCase().trim();
-    
-    // Lấy Topic: Nối tất cả các phần tử còn lại (sau Level)
-    const topicSegment = slug.slice(1).join('/');
-    
-    // Fix: DecodeURIComponent chỉ áp dụng cho toàn bộ Topic
-    const requestedTopic = decodeURIComponent(topicSegment).trim(); 
-    
-    if (!requestedLevel || !requestedTopic) {
-         return res.status(400).json({ success: false, message: "Level hoặc Topic không được định dạng hợp lệ." });
-    }
+    let requestedLevel = null;
+    let requestedTopic = null;
 
+    // --- LOGIC XỬ LÝ SLUG MỚI ---
+    try {
+        let slug = req.query.slug; 
+        
+        if (!Array.isArray(slug) && typeof slug === 'string') {
+            slug = slug.split('/');
+        } else if (!Array.isArray(slug)) {
+            slug = [];
+        }
+
+        if (slug.length >= 2) {
+            requestedLevel = slug[0].toUpperCase().trim();
+            // Nối tất cả các phần còn lại để tạo Topic
+            const topicSegment = slug.slice(1).join('/');
+            requestedTopic = decodeURIComponent(topicSegment).trim(); 
+        } else {
+            // DỰ PHÒNG: Phân tích URL thô nếu slug thất bại
+            const urlParts = req.url.split('/api/lesson/');
+            if (urlParts.length > 1) {
+                const path = urlParts[1].split('?')[0]; // Loại bỏ query string
+                const pathSegments = path.split('/').filter(s => s.length > 0);
+                
+                if (pathSegments.length >= 2) {
+                    requestedLevel = pathSegments[0].toUpperCase().trim();
+                    const topicSegment = pathSegments.slice(1).join('/');
+                    requestedTopic = decodeURIComponent(topicSegment).trim();
+                }
+            }
+        }
+    } catch (e) {
+        // Bỏ qua lỗi parsing, sẽ trả về 400 nếu requestedLevel/Topic vẫn null
+    }
+    // ----------------------------
+
+    if (!requestedLevel || !requestedTopic) {
+         return res.status(400).json({ 
+             success: false, 
+             message: "Level hoặc Topic không được định dạng hợp lệ. Kiểm tra URL API.",
+             debug: { requestedLevel, requestedTopic } // Thêm debug để kiểm tra
+         });
+    }
 
     try {
         const data = await getAndParseData();
