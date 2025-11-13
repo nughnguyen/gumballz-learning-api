@@ -335,18 +335,28 @@ module.exports = async (req, res) => {
         `;
     };
 
-    // Hàm render Footer (Đã thay đổi ICON và ANIMATION)
+    // Hàm render Footer (Đã đổi tên và cập nhật ICON)
     const renderFooter = () => {
         const contactInfo = [
+            // Icon cho Social Media thường là các biểu tượng đơn giản (M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z)
             { label: 'Facebook', value: 'hungnq188.2k5', link: 'https://www.facebook.com/hungnq188.2k5', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z' },
-            { label: 'YouTube', value: '@nughnguyen', link: 'https://www.youtube.com/@nughnguyen', icon: 'M22.54 6.42A1.88 1.88 0 0021 5c-1.28-.6-12-1.2-12-1.2s-10.72.6-12 1.2a1.88 1.88 0 00-1.54 1.42C3 11.22 3 15 3 15s.6 3.78 1.46 4.62c1.28.6 12 1.2 12 1.2s10.72-.6 12-1.2a1.88 1.88 0 001.54-1.42c.54-4.8.54-8.58.54-8.58s-.02-3.78-.54-8.58zM10 15V9l5 3-5 3z' }, 
+            // Icon cho YouTube
+            { label: 'YouTube', value: '@nughnguyen', link: 'https://www.youtube.com/@nughnguyen', icon: 'M10 15V9l5 3-5 3zM22 12c0-1.72-.1-3.41-.35-5.02a2.38 2.38 0 00-1.63-1.63C18.41 5 12 5 12 5s-6.41 0-8.02.35a2.38 2.38 0 00-1.63 1.63C2 8.59 2 12 2 12s0 3.41.35 5.02a2.38 2.38 0 001.63 1.63C5.59 19 12 19 12 19s6.41 0 8.02-.35a2.38 2.38 0 001.63-1.63C22 15.41 22 12 22 12z' }, 
+            // Icon cho Instagram
             { label: 'Instagram', value: 'hq.hnug', link: 'https://www.instagram.com/hq.hnug', icon: 'M16 3H8a5 5 0 00-5 5v8a5 5 0 005 5h8a5 5 0 005-5V8a5 5 0 00-5-5zM12 17a5 5 0 110-10 5 5 0 010 10zM17.5 6.5h.01' },
+            // Icon cho Discord (sử dụng icon chat đơn giản)
             { label: 'Discord', value: 'dsc.gg/thenoicez', link: 'https://dsc.gg/thenoicez', icon: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z' },
+            // Icon cho Email
             { label: 'Email', value: 'hungnq.august.work@gmail.com', link: 'mailto:hungnq.august.work@gmail.com', icon: 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM20 6l-8 5-8-5' },
-            { label: 'LinkedIn', value: 'hungnq-august', link: 'https://www.linkedin.com/in/hungnq-august/', icon: 'M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14zM8 17V9h3v8H8zM7 7.25A1.25 1.25 0 005.75 6a1.25 1.25 0 00-1.25 1.25 1.25 1.25 0 001.25 1.25 1.25 1.25 0 001.25-1.25z' },
+            // Icon cho LinkedIn
+            { label: 'LinkedIn', value: 'hungnq-august', link: 'https://www.linkedin.com/in/hungnq-august/', icon: 'M16 8a6 6 0 00-6 6v7h-4v-7a6 6 0 006-6v0h0zM5 8h4v13H5zM12 4a2 2 0 11-4 0 2 2 0 014 0z' },
+            // Icon cho TikTok (sử dụng icon camera đơn giản)
             { label: 'TikTok', value: 'nq.hnug', link: 'https://www.tiktok.com/@nq.hnug', icon: 'M23 7l-8.79 5.86-5.86-8.79-1.47 1.47 8.79 5.86 5.86 8.79-1.47 1.47 5.86-8.79z' },
+            // Icon cho Phone
             { label: 'Phone', value: '0388205003 / 0923056036', link: 'tel:0388205003', icon: 'M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.63A2 2 0 014.08 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z' },
+            // Icon cho Zalo (sử dụng icon chat đơn giản)
             { label: 'Zalo', value: 'Hưng (0923056036)', link: 'https://zalo.me/0923056036', icon: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z' },
+            // Icon cho Website (sử dụng icon globe)
             { label: 'Website', value: 'guns.lol/nguyenquochung', link: 'https://guns.lol/nguyenquochung', icon: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' }
         ];
 
@@ -356,7 +366,7 @@ module.exports = async (req, res) => {
                     <div class="text-center mb-6 relative">
                         <span class="text-xs text-gray-400 block mb-2">Developed & Maintained by</span>
                         <div class="inline-block text-2xl font-extrabold tracking-wider text-white relative">
-                            <span class="quoc-hung-text relative z-10">Quoc Hung</span>
+                            <span class="quoc-hung-text relative z-10">Nguyen Quoc Hung</span>
                             <div class="heart-container">
                                 <span class="heart-bubble heart-1"></span>
                                 <span class="heart-bubble heart-2"></span>
@@ -378,11 +388,11 @@ module.exports = async (req, res) => {
                     </div>
 
                     <p class="text-center text-xs text-gray-500 mt-8 pt-4 border-t border-gray-700">
-                        &copy; ${new Date().getFullYear()} Quoc Hung. All rights reserved.
+                        &copy; ${new Date().getFullYear()} Nguyen Quoc Hung. All rights reserved.
                     </p>
                 </div>
                 <style>
-                    /* Animation cho chữ Quoc Hung */
+                    /* Animation cho chữ Nguyen Quoc Hung */
                     @keyframes textBlink {
                         0%, 100% { color: #f3e8ff; text-shadow: 0 0 5px #9333ea, 0 0 10px #9333ea; }
                         50% { color: #ffffff; text-shadow: 0 0 10px #a78bfa, 0 0 20px #8b5cf6; }
@@ -427,7 +437,6 @@ module.exports = async (req, res) => {
                         border-radius: 50%;
                     }
 
-                    /* Để tạo hình dạng trái tim */
                     .heart-bubble::before {
                         top: -50%;
                         left: 0;
@@ -489,7 +498,7 @@ module.exports = async (req, res) => {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Gumballz API Dashboard | Quoc Hung</title>
+            <title>Gumballz API Dashboard | Nguyen Quoc Hung</title>
             <script src="https://cdn.tailwindcss.com"></script>
             <style>
                 body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; }
