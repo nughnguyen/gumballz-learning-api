@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "rewrites": [
+    { 
+      "source": "/api/vocabulary/list-levels", 
+      "destination": "/api/vocabulary/list-levels.js" 
+    },
+    { 
+      "source": "/api/vocabulary/list-topics", 
+      "destination": "/api/vocabulary/list-topics.js" 
+    },
+    { 
+      "source": "/api/lesson/:path*", 
+      "destination": "/api/lesson/[...slug].js" 
+    }
+  ]
+}

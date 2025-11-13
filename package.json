@@ -1,0 +1,13 @@
+{
+  "name": "gumballz-api",
+  "version": "1.0.0",
+  "description": "Serverless Functions for Gumballz App vocabulary data synchronization.",
+  "main": "api/index.js",
+  "scripts": {
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "csvtojson": "^2.0.14",
+    "node-fetch": "^2.7.0"
+  }
+}
