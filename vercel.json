@@ -16,6 +16,10 @@
     { 
       "source": "/api/lesson/:path*", 
       "destination": "/api/lesson/[...slug].js" 
+    },
+    { 
+      "source": "/api/stats", 
+      "destination": "/api/stats.js" 
     }
   ]
 }

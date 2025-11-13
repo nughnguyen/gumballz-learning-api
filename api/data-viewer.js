@@ -72,20 +72,6 @@ async function getAndParseData() {
     }
 }
 
-// Hàm lấy dữ liệu API (Levels, Topics, Lesson)
-const fetchDataEndpoint = async (url, method = 'GET') => {
-    try {
-        // Sử dụng node-fetch
-        const response = await fetch(url, { method });
-        if (!response.ok) {
-            return { success: false, message: `Lỗi HTTP: ${response.status}` };
-        }
-        return await response.json();
-    } catch (e) {
-        return { success: false, message: `Lỗi kết nối: ${e.message}` };
-    }
-};
-
 // Hàm chính của Serverless Function
 module.exports = async (req, res) => {
     // 1. Tải và Cập nhật Thống kê
@@ -123,6 +109,7 @@ module.exports = async (req, res) => {
     
     let topicsStatus = { success: false, message: "Level test không khả dụng", data: [] };
     let lessonStatus = { success: false, message: "Lesson test không khả dụng", data: [] };
+    let globalStats = { totalLevels: 0, totalTopics: 0, totalWords: 0, levelStats: [] };
 
     let testLevel = null;
     let testTopic = null;
@@ -150,6 +137,15 @@ module.exports = async (req, res) => {
              const lessonData = filteredData.filter(row => row.topic && row.topic.trim() === testTopic);
              lessonStatus = { success: true, message: "Thành công", data: lessonData.slice(0, 3) }; // Lấy 3 từ đầu
         }
+        
+        // Tính Global Stats
+        const allTopics = new Set(rawData.map(r => `${r.level}|${r.topic}`));
+        globalStats = {
+            totalLevels: levelsArray.length,
+            totalTopics: allTopics.size,
+            totalWords: rawData.length,
+            levelStats: levelsArray
+        };
     }
 
     // 3. Render HTML
@@ -161,7 +157,7 @@ module.exports = async (req, res) => {
         const stateClass = isSuccess ? 'bg-green-100 border-green-500' : 'bg-red-100 border-red-500';
         const stateColor = isSuccess ? 'text-green-700' : 'text-red-700';
 
-        const displayData = data.slice(0, 3); // Giới hạn hiển thị 3 item đầu tiên
+        const displayData = data ? data.slice(0, 3) : []; // Giới hạn hiển thị 3 item đầu tiên
 
         return `
             <div class="bg-white p-6 rounded-xl shadow-lg mb-6 transition duration-300 hover:shadow-xl">
@@ -229,6 +225,27 @@ module.exports = async (req, res) => {
                         <p class="text-sm text-gray-500 mt-1">Kể từ khi instance khởi động.</p>
                     </div>
                 </div>
+                
+                <!-- Thống kê dữ liệu CSV tổng quát -->
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Thống kê Dữ liệu Tổng quát (CSV)</h2>
+                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-green-500">
+                        <p class="text-sm font-medium text-gray-500">Tổng Level</p>
+                        <p class="text-3xl font-bold text-gray-800 mt-1">${globalStats.totalLevels}</p>
+                        <p class="text-sm text-gray-500 mt-1">Hiện có: ${globalStats.levelStats.map(s => s.level).join(', ')}</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-indigo-500">
+                        <p class="text-sm font-medium text-gray-500">Tổng Chủ đề</p>
+                        <p class="text-3xl font-bold text-gray-800 mt-1">${globalStats.totalTopics}</p>
+                        <p class="text-sm text-gray-500 mt-1">Qua tất cả các Level.</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-pink-500">
+                        <p class="text-sm font-medium text-gray-500">Tổng Từ vựng</p>
+                        <p class="text-3xl font-bold text-gray-800 mt-1">${globalStats.totalWords}</p>
+                        <p class="text-sm text-gray-500 mt-1">Tất cả các Level và Chủ đề.</p>
+                    </div>
+                </div>
+
 
                 <!-- Bảng kiểm tra API -->
                 <h2 class="text-2xl font-bold text-gray-800 mb-4">Kiểm tra Endpoints</h2>
