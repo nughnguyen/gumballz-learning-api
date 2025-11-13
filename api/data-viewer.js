@@ -425,14 +425,13 @@ module.exports = async (req, res) => {
                 </div>
                 <style>
                     /* ⭐ CSS CẬP NHẬT: THÊM GLOW CHO ICON VÀ CHỮ */
-                    /* Đảm bảo glow hoạt động trên các thẻ <i> */
                     .footer-icon-glow {
-                        filter: drop-shadow(0 0 2px #c084fc); /* Màu tím nhạt cho icon */
+                        filter: drop-shadow(0 0 2px #c084fc); 
                         transition: filter 0.3s ease;
-                        font-size: 1.25rem; /* Điều chỉnh kích thước icon nếu cần (w-5 h-5 tương đương 1.25rem) */
+                        font-size: 1.25rem; 
                     }
                     .footer-icon-glow:hover {
-                        filter: drop-shadow(0 0 4px #e879f9) drop-shadow(0 0 8px #c084fc); /* Glow mạnh hơn khi hover */
+                        filter: drop-shadow(0 0 4px #e879f9) drop-shadow(0 0 8px #c084fc); 
                     }
                     
                     /* Animation cho chữ Nguyen Quoc Hung */
@@ -529,7 +528,6 @@ module.exports = async (req, res) => {
                         animation-delay: 2.5s;
                         left: 50%; top: 60%;
                     }
-
                 </style>
             </footer>
         `;
@@ -557,7 +555,6 @@ module.exports = async (req, res) => {
              <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-brands/css/uicons-brands.css'>
              <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
              <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-thin-rounded/css/uicons-thin-rounded.css'>
-
         </head>
         <body>
             <div class="container mx-auto p-4 sm:p-8">
