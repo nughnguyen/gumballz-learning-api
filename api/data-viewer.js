@@ -389,7 +389,7 @@ module.exports = async (req, res) => {
             { label: 'TikTok', value: 'nq.hnug', link: 'https://www.tiktok.com/@nq.hnug', iconClass: 'fi fi-brands-tik-tok' },
             { label: 'Phone', value: '0388205003 / 0923056036', link: 'tel:0388205003', iconClass: 'fi fi-rr-phone-call' },
             { label: 'Zalo', value: 'Hưng (0923056036)', link: 'https://zalo.me/0923056036', iconClass: 'fi fi-rr-comment' },
-            { label: 'Website', value: 'guns.lol/nguyenquochung', link: 'https://guns.lol/ngunz-quoc-hung', iconClass: 'fi fi-rr-globe' }
+            { label: 'Website', value: 'guns.lol/nguyenquochung', link: 'https://guns.lol/nguyenquochung', iconClass: 'fi fi-rr-globe' }
         ];
 
         return `
